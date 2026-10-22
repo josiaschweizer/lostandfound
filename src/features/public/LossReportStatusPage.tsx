@@ -1,0 +1,98 @@
+import { useMemo } from 'react'
+import { useParams, useSearchParams } from 'react-router'
+import { SearchX } from 'lucide-react'
+import { formatDate } from '@/domain/dates'
+import { CATEGORY_LABELS } from '@/domain/labels'
+import { findMatches, MATCH_WINDOW_DAYS } from '@/domain/matching'
+import { ColorDot } from '@/components/items/ItemVisual'
+import { ITEM_GRID, ItemCard } from '@/components/items/ItemCard'
+import { LossReportStatusBadge } from '@/components/items/StatusBadges'
+import { SimulatedEmailCard } from '@/components/items/SimulatedEmailCard'
+import { ButtonLink } from '@/components/ui/Button'
+import { Alert, EmptyState, ErrorState, Spinner } from '@/components/ui/Feedback'
+import { CardSection, DefinitionList, PageHeader } from '@/components/ui/Layout'
+import { useCatalog, useLossReport, useOrganisationLookup } from './queries'
+
+/** Statusseite der Verlustmeldung (nur über geheimen Link erreichbar) mit möglichen Treffern. */
+export const LossReportStatusPage = () => {
+  const { token = '' } = useParams()
+  const [params] = useSearchParams()
+  const report = useLossReport(token)
+  const catalog = useCatalog()
+  const lookup = useOrganisationLookup()
+
+  const matches = useMemo(
+    () => (report.data && catalog.data ? findMatches(report.data, catalog.data) : []),
+    [report.data, catalog.data],
+  )
+
+  if (report.isPending) return <Spinner />
+  if (report.isError) return <ErrorState error={report.error} />
+  if (!report.data) return <EmptyState title="Meldung nicht gefunden">Bitte prüfen Sie den Link aus Ihrer Bestätigung.</EmptyState>
+
+  const r = report.data
+  const orgName = r.organisationId ? lookup.get(r.organisationId)?.name : 'Alle Fundstellen («Weiss nicht»)'
+
+  return (
+    <div className="space-y-6">
+      <PageHeader eyebrow="Ihre Verlustmeldung" title={r.title} actions={<LossReportStatusBadge status={r.status} />} />
+      {params.get('neu') && (
+        <Alert tone="success" title="Verlustmeldung erfasst">
+          Speichern Sie diese Seite – über den Link sehen Sie jederzeit neue mögliche Treffer.
+        </Alert>
+      )}
+
+      <section aria-labelledby="matches-title">
+        <h2 id="matches-title" className="text-xl font-semibold">
+          Mögliche Treffer
+        </h2>
+        <p className="mb-4 text-sm text-stone-600">
+          Gleiche Kategorie, gefunden am Verlusttag oder bis {MATCH_WINDOW_DAYS} Tage danach. Sortiert nach Farbe und gemeinsamen Stichworten. Dies sind
+          nur Vorschläge.
+        </p>
+        {catalog.isPending ? (
+          <Spinner />
+        ) : matches.length === 0 ? (
+          <EmptyState icon={<SearchX className="size-6" />} title="Noch kein passender Fund" action={<ButtonLink to="/suche" variant="secondary">Selbst suchen</ButtonLink>}>
+            Sobald eine Fundstelle einen passenden Gegenstand erfasst, kann sie Sie benachrichtigen (simulierte E-Mail).
+          </EmptyState>
+        ) : (
+          <ul className={ITEM_GRID}>
+            {matches.map(({ item, colorMatches, sharedKeywords }) => (
+              <li key={item.id} className="space-y-2">
+                <ItemCard item={item} to={`/fund/${item.id}`} organisationName={lookup.get(item.organisationId)?.name} />
+                <p className="px-1 text-xs text-stone-500">
+                  {colorMatches ? 'Farbe stimmt' : 'Andere Farbe'}
+                  {sharedKeywords.length > 0 && ` · gemeinsam: ${sharedKeywords.join(', ')}`}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <CardSection title="Angaben">
+          <DefinitionList
+            items={[
+              { label: 'Gemeldet bei', value: orgName },
+              { label: 'Kategorie', value: CATEGORY_LABELS[r.category] },
+              { label: 'Farbe', value: <ColorDot color={r.color} /> },
+              { label: 'Marke', value: r.brand },
+              { label: 'Verloren am', value: formatDate(r.lostOn) },
+              { label: 'Ort', value: r.lostLocation },
+              { label: 'Beschreibung', value: r.description },
+            ]}
+          />
+        </CardSection>
+        <CardSection title="Nachrichten" description="Im Prototyp werden E-Mails nur simuliert und hier angezeigt.">
+          <div className="space-y-3">
+            {r.emails.map((email) => (
+              <SimulatedEmailCard key={email.id} email={email} />
+            ))}
+          </div>
+        </CardSection>
+      </div>
+    </div>
+  )
+}
