@@ -8,6 +8,7 @@ export type ItemColor = Enums['item_color']
 export type ItemStatus = Enums['item_status']
 export type RequestStatus = Enums['request_status']
 export type LossReportStatus = Enums['loss_report_status']
+export type EmailDeliveryStatus = Enums['email_delivery_status']
 
 export interface Organisation {
   id: string
@@ -94,7 +95,7 @@ export interface LossReport {
   createdAt: string
 }
 
-/** Simulierte E-Mail – es wird nichts wirklich versendet. */
+/** Nachricht im Postausgang. Wird zusätzlich echt versendet, wenn der Versand konfiguriert ist. */
 export interface SimulatedEmail {
   id: string
   recipient: string
@@ -102,6 +103,9 @@ export interface SimulatedEmail {
   body: string
   linkPath: string | null
   createdAt: string
+  deliveryStatus: EmailDeliveryStatus
+  deliveryNote: string | null
+  sentAt: string | null
 }
 
 export interface StaffMember {

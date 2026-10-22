@@ -84,8 +84,9 @@ Alle Personen, Organisationen und Adressen sind erfunden.
 - Gegenstand erfassen und bearbeiten. Öffentliche und interne Angaben sind getrennt. Optional mit Foto (wird verkleinert). Die Fundnummer `KÜRZEL-JAHR-0001` vergibt die Datenbank automatisch.
 - Interne Detailansicht mit Statuswechsel (Verfügbar / Reserviert / Zurückgegeben)
 - Anfragen prüfen: Der Eigentumsnachweis steht direkt neben dem internen Merkmal. Anfragen lassen sich bestätigen (mit Abholhinweisen) oder ablehnen. Nach der Übergabe wird der Gegenstand als zurückgegeben markiert.
-- Verlustmeldungen mit Treffern aus dem eigenen Bestand. Die betroffene Person lässt sich benachrichtigen (simuliert).
-- Postausgang (simulierte E-Mails)
+- Verlustmeldungen mit Treffern aus dem eigenen Bestand. Die betroffene Person lässt sich per E-Mail benachrichtigen.
+- Postausgang mit allen Nachrichten und ihrem Versandstatus
+- E-Mail-Versand über Resend (optional, siehe Abschnitt «E-Mail-Versand einrichten»)
 - Angaben der Fundstelle bearbeiten
 
 **Fachliche Regeln** (in der Datenbank erzwungen, nicht nur im Frontend)
@@ -98,9 +99,38 @@ Alle Personen, Organisationen und Adressen sind erfunden.
 
 ---
 
-## 4. Simulierte Funktionen und Einschränkungen
+## 4. E-Mail-Versand einrichten (optional)
 
-- **E-Mails werden nie versendet.** Sie landen in der Tabelle `simulated_emails` und erscheinen als «Simulierte E-Mail» im Postausgang und auf den Statusseiten.
+Ohne diese Schritte funktioniert alles wie bisher, Nachrichten erscheinen dann nur im Postausgang.
+
+**Ablauf:** Neue Nachricht in `simulated_emails` → Datenbank-Trigger (pg_net) → Edge Function `send-email` → Resend → Status `versendet` oder `fehlgeschlagen` im Postausgang.
+
+1. Konto bei [resend.com](https://resend.com) anlegen und einen **API-Key** erstellen.
+   - Ohne eigene Domain gehen Mails nur an die Adresse deines Resend-Kontos. Absender ist dann `onboarding@resend.dev`.
+   - Für beliebige Empfänger unter *Domains* eine eigene Domain verifizieren (DNS-Einträge). Absender ist dann z. B. `noreply@eure-domain.ch`.
+2. Ein zufälliges Webhook-Secret erzeugen: `openssl rand -hex 32`
+3. Secrets für die Function setzen und sie deployen:
+   ```bash
+   pnpm exec supabase secrets set \
+     RESEND_API_KEY=re_xxx \
+     EMAIL_FROM="lostandfound <onboarding@resend.dev>" \
+     EMAIL_WEBHOOK_SECRET=<secret aus Schritt 2> \
+     APP_URL=http://localhost:5173
+   pnpm fn:deploy
+   ```
+4. Im Supabase-Dashboard unter *SQL Editor* einmal ausführen (gleiches Secret wie oben):
+   ```sql
+   select vault.create_secret('https://hfwykjvplojbetwzpyvu.supabase.co/functions/v1/send-email', 'email_function_url');
+   select vault.create_secret('<secret aus Schritt 2>', 'email_webhook_secret');
+   ```
+5. Testen: öffentlich eine Rückgabe anfragen und als Kontakt die eigene E-Mail-Adresse angeben. Im Postausgang der Organisation steht danach «E-Mail versendet». Bei «Versand fehlgeschlagen» steht der Grund direkt unter der Nachricht. Logs gibt es unter *Edge Functions → send-email → Logs*.
+
+Versand wieder ausschalten: `select vault.delete_secret(id) from vault.secrets where name = 'email_function_url';` (oder im Dashboard unter *Vault*).
+
+## 5. Einschränkungen
+
+- **E-Mails:** Alle Nachrichten landen in der Tabelle `simulated_emails` (Postausgang und Statusseiten). Echt versendet werden sie nur, wenn der Versand eingerichtet ist. Erfundene Test-Adressen (`@example.com`, `*.example`) und Telefonnummern werden nie angeschrieben, deshalb verschicken auch die Beispieldaten keine Mails.
+- **Resend ohne eigene Domain** stellt nur an die E-Mail-Adresse des Resend-Kontos zu. Andere Empfänger brauchen eine bei Resend verifizierte Domain.
 - **Demo-Hilfe** (Rollenwechsel, Reset) ist eine Präsentationshilfe und keine Funktion der echten Plattform. `reset_demo()` kann **jede Person** mit Zugriff auf die Seite aufrufen. Das ist für einen öffentlichen Betrieb ungeeignet.
 - **Demo-Passwort** `demo1234` ist bewusst öffentlich. Die Anmeldung selbst läuft über Supabase Auth (Passwörter gehasht bei Supabase, nicht bei uns). Trotzdem ist dies **keine** geprüfte, sichere Benutzerverwaltung. Bitte keine echten Personendaten und kein privates Passwort verwenden.
 - **Eine Fundstelle pro Organisation** und eine Organisation pro Konto. Mitarbeitende einladen oder mehrere Standorte gibt es nicht.
@@ -112,11 +142,12 @@ Alle Personen, Organisationen und Adressen sind erfunden.
 
 ---
 
-## 5. Projektstruktur
+## 6. Projektstruktur
 
 ```
 supabase/
   migrations/      Schema, RLS, RPC-Funktionen, Storage, Demo-Daten/Reset
+  functions/       Edge Function send-email (Resend)
   seed.sql         ruft seed_demo_data() auf
 db-tests/          SQL-Tests (RLS, Workflow) gegen lokales Postgres
 src/

@@ -103,7 +103,7 @@ export const RequestDetailPage = () => {
       <CardSection title="Entscheidung">
         {request.status === 'confirmed' && (
           <div className="space-y-4">
-            <Alert tone="success" title="Bestätigt – Abholhinweise gesendet (simuliert)">
+            <Alert tone="success" title="Bestätigt – Abholhinweise wurden an die Person gesendet">
               <p className="whitespace-pre-line">{request.pickupInstructions}</p>
             </Alert>
             <div className="flex flex-wrap gap-2">
@@ -146,7 +146,7 @@ export const RequestDetailPage = () => {
         )}
         {mode === 'confirm' && (
           <div className="space-y-4">
-            <Field label="Abholhinweise für die suchende Person" required hint="Werden in der Bestätigung (simulierte E-Mail) und auf der Statusseite angezeigt.">
+            <Field label="Abholhinweise für die suchende Person" required hint="Werden in der Bestätigung per E-Mail und auf der Statusseite angezeigt.">
               {(p) => <Textarea rows={3} value={pickup} onChange={(e) => setPickup(e.target.value)} {...p} />}
             </Field>
             <p className="text-sm text-stone-600">
@@ -164,7 +164,7 @@ export const RequestDetailPage = () => {
         )}
         {mode === 'reject' && (
           <div className="space-y-4">
-            <Field label="Begründung" hint="Wird der suchenden Person mitgeteilt (simulierte E-Mail).">
+            <Field label="Begründung" hint="Wird der suchenden Person per E-Mail mitgeteilt.">
               {(p) => <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} {...p} />}
             </Field>
             <div className="flex gap-2">

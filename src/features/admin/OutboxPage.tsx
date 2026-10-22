@@ -9,8 +9,9 @@ export const OutboxPage = () => {
   return (
     <div className="mx-auto max-w-3xl">
       <PageHeader title="Postausgang" description="Benachrichtigungen Ihrer Fundstelle." />
-      <Alert tone="warning" className="mb-6" title="Simulation">
-        Im Prototyp werden keine echten E-Mails versendet. Die Nachrichten werden nur gespeichert und hier angezeigt.
+      <Alert tone="info" className="mb-6" title="Versand">
+        Alle Nachrichten werden hier protokolliert. Ist der E-Mail-Versand eingerichtet (siehe README), gehen sie zusätzlich über Resend an echte
+        Adressen. Erfundene Test-Adressen (z. B. @example.com) und Telefonnummern werden nie angeschrieben.
       </Alert>
       {outbox.isPending && <Spinner />}
       {outbox.isError && <ErrorState error={outbox.error} />}

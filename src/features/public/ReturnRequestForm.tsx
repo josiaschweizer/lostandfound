@@ -37,7 +37,7 @@ export const ReturnRequestForm = ({ item }: { item: FoundItem }) => {
           <Link to={`/status/anfrage/${token}`} className="font-medium text-brand-700 underline underline-offset-2">
             Anfrage verfolgen
           </Link>
-          . Bitte speichern Sie den Link – eine Bestätigung wurde zusätzlich per E-Mail (simuliert) gesendet.
+          . Bitte speichern Sie den Link. Eine Bestätigung erhalten Sie zusätzlich per E-Mail, sofern Sie eine E-Mail-Adresse angegeben haben.
         </p>
       </div>
     )

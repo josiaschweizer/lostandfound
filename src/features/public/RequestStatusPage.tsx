@@ -55,7 +55,7 @@ export const RequestStatusPage = () => {
           ]}
         />
       </CardSection>
-      <CardSection title="Nachrichten" description="Im Prototyp werden E-Mails nur simuliert und hier angezeigt.">
+      <CardSection title="Nachrichten" description="Diese Nachrichten erhalten Sie per E-Mail (sofern der Versand eingerichtet ist).">
         <div className="space-y-3">
           {data.emails.map((email) => (
             <SimulatedEmailCard key={email.id} email={email} />

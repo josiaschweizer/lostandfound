@@ -161,7 +161,7 @@ export const StaffItemPage = () => {
           </CardSection>
 
           {matchingReports.length > 0 && (
-            <CardSection title="Passende Verlustmeldungen" description="Nach Kategorie, Datum und Farbe. Benachrichtigung wird nur simuliert.">
+            <CardSection title="Passende Verlustmeldungen" description="Nach Kategorie, Datum und Farbe. Die Person erhält eine E-Mail.">
               <ul className="space-y-3">
                 {matchingReports.map((r) => (
                   <li key={r.id} className="rounded-lg bg-stone-50 p-3 text-sm">
@@ -185,7 +185,7 @@ export const StaffItemPage = () => {
               </ul>
               {notify.isSuccess && (
                 <Alert tone={notify.data ? 'success' : 'info'} className="mt-3">
-                  {notify.data ? 'Simulierte E-Mail erstellt (siehe Postausgang).' : 'Diese Person wurde zu diesem Gegenstand bereits benachrichtigt.'}
+                  {notify.data ? 'Benachrichtigung erstellt (siehe Postausgang).' : 'Diese Person wurde zu diesem Gegenstand bereits benachrichtigt.'}
                 </Alert>
               )}
               {notify.isError && <Alert tone="error" className="mt-3">{toUserMessage(notify.error)}</Alert>}

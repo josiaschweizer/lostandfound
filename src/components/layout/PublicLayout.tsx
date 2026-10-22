@@ -66,7 +66,7 @@ export const PublicLayout = () => {
       </main>
       <footer className="border-t border-stone-200 bg-white">
         <div className="mx-auto max-w-6xl px-4 py-6 text-sm text-stone-500">
-          Schulprototyp (Modul M241) · Alle Daten sind erfunden · E-Mails werden nur simuliert.
+          Schulprototyp (Modul M241) · Beispieldaten sind erfunden · Bitte keine echten Personendaten eingeben.
         </div>
       </footer>
     </div>

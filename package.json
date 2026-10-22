@@ -12,7 +12,9 @@
     "preview": "vite preview",
     "db:link": "supabase link --project-ref hfwykjvplojbetwzpyvu",
     "db:push": "supabase db push --include-seed",
-    "db:types": "supabase gen types typescript --linked --schema public > src/lib/database.types.ts"
+    "db:types": "supabase gen types typescript --linked --schema public > src/lib/database.types.ts",
+    "fn:deploy": "supabase functions deploy send-email",
+    "fn:test": "deno test supabase/functions/send-email/"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.2",

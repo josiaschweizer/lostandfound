@@ -146,3 +146,23 @@ select pg_temp.check((select count(*) from public.return_requests) = 7, 'Reset: 
 select pg_temp.check((select count(*) from auth.users) = 3, 'Reset: neue Konten entfernt');
 select pg_temp.check((select count(*) from auth.identities) = 3, 'Reset: Identitäten vorhanden');
 select pg_temp.check((select extensions.crypt('demo1234', encrypted_password) = encrypted_password from auth.users where email='lea.brunner@bbz-seetal.example'), 'Demo-Passwort funktioniert');
+
+-- ===== E-Mail-Versand =====
+select pg_temp.check((select count(*) from net.calls) = 0, 'Ohne Konfiguration: kein Versand-Aufruf');
+select pg_temp.check((select bool_and(delivery_status = 'skipped') from public.simulated_emails), 'Ohne Konfiguration: alle Mails nur simuliert');
+insert into vault.decrypted_secrets values ('email_function_url', 'https://test.supabase.co/functions/v1/send-email'), ('email_webhook_secret', 's3cret');
+select pg_temp.as_user(null);
+select public.submit_loss_report(null, 'Echt Person', 'echt.person@gmail.com', 'Velo-Helm', 'sports', 'white', null, current_date, '', '');
+select public.submit_loss_report(null, 'Test Person', 'test@example.com', 'Velo-Helm', 'sports', 'white', null, current_date, '', '');
+select public.submit_loss_report(null, 'Tel Person', '+41 00 000 00 00', 'Velo-Helm', 'sports', 'white', null, current_date, '', '');
+reset role;
+select pg_temp.check((select delivery_status from public.simulated_emails where recipient = 'echt.person@gmail.com') = 'pending', 'Echte Adresse: Versand ausgelöst (pending)');
+select pg_temp.check((select delivery_status from public.simulated_emails where recipient = 'test@example.com') = 'skipped', 'Test-Domain example.com: nicht versendet');
+select pg_temp.check((select delivery_status from public.simulated_emails where recipient = '+41 00 000 00 00') = 'skipped', 'Telefonnummer: nicht versendet');
+select pg_temp.check((select count(*) from net.calls) = 1, 'Genau ein Aufruf der Edge Function');
+select pg_temp.check((select headers->>'x-webhook-secret' from net.calls limit 1) = 's3cret', 'Aufruf enthält Webhook-Secret');
+select pg_temp.check((select (body->>'id')::uuid from net.calls limit 1) = (select id from public.simulated_emails where recipient = 'echt.person@gmail.com'), 'Aufruf enthält Mail-ID');
+select pg_temp.check((select public.get_loss_report(access_token)->'emails'->0->>'deliveryStatus' from public.loss_reports where reporter_contact = 'echt.person@gmail.com') = 'pending', 'Statusseite zeigt Versandstatus');
+select pg_temp.as_user(null);
+select pg_temp.fails($$select public.email_setting('email_webhook_secret')$$, 'anon kann Secrets nicht lesen');
+reset role;

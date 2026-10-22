@@ -46,7 +46,7 @@ export const LossReportsPage = () => {
       {(notify.isError || close.isError) && <Alert tone="error" className="mb-4">{toUserMessage(notify.error ?? close.error)}</Alert>}
       {notify.isSuccess && (
         <Alert tone={notify.data ? 'success' : 'info'} className="mb-4">
-          {notify.data ? 'Simulierte E-Mail an die meldende Person erstellt.' : 'Zu diesem Gegenstand wurde bereits benachrichtigt.'}
+          {notify.data ? 'Benachrichtigung an die meldende Person erstellt.' : 'Zu diesem Gegenstand wurde bereits benachrichtigt.'}
         </Alert>
       )}
       {reports.isPending && <Spinner />}

@@ -54,7 +54,7 @@ export const LossReportStatusPage = () => {
           <Spinner />
         ) : matches.length === 0 ? (
           <EmptyState icon={<SearchX className="size-6" />} title="Noch kein passender Fund" action={<ButtonLink to="/suche" variant="secondary">Selbst suchen</ButtonLink>}>
-            Sobald eine Fundstelle einen passenden Gegenstand erfasst, kann sie Sie benachrichtigen (simulierte E-Mail).
+            Sobald eine Fundstelle einen passenden Gegenstand erfasst, kann sie Sie per E-Mail benachrichtigen.
           </EmptyState>
         ) : (
           <ul className={ITEM_GRID}>
@@ -85,7 +85,7 @@ export const LossReportStatusPage = () => {
             ]}
           />
         </CardSection>
-        <CardSection title="Nachrichten" description="Im Prototyp werden E-Mails nur simuliert und hier angezeigt.">
+        <CardSection title="Nachrichten" description="Diese Nachrichten erhalten Sie per E-Mail (sofern der Versand eingerichtet ist).">
           <div className="space-y-3">
             {r.emails.map((email) => (
               <SimulatedEmailCard key={email.id} email={email} />

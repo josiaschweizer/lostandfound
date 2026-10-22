@@ -33,6 +33,7 @@ type ItemColor =
 type ItemStatus = 'available' | 'reserved' | 'returned'
 type RequestStatus = 'open' | 'confirmed' | 'rejected' | 'completed'
 type LossReportStatus = 'open' | 'closed'
+type EmailDeliveryStatus = 'pending' | 'sent' | 'failed' | 'skipped'
 
 export type Database = {
   public: {
@@ -246,6 +247,9 @@ export type Database = {
           subject: string
           body: string
           created_at: string
+          delivery_status: EmailDeliveryStatus
+          delivery_note: string | null
+          sent_at: string | null
         }
         Insert: never
         Update: never
@@ -307,6 +311,7 @@ export type Database = {
       item_status: ItemStatus
       request_status: RequestStatus
       loss_report_status: LossReportStatus
+      email_delivery_status: EmailDeliveryStatus
     }
     CompositeTypes: { [_ in never]: never }
   }

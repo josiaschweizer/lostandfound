@@ -10,7 +10,7 @@ Vorbereitung: Demo zurücksetzen (Demo-Hilfe → «Demo zurücksetzen»), dann S
 | 0:20 | **Organisation registrieren** | «Organisation registrieren» → Konto, Organisation, Fundstelle → «Fertig» mit eigener öffentlicher Seite. |
 | 0:50 | **Fund erfassen** | «Fundgegenstand erfassen»: öffentliche Angaben oben, **interne Merkmale** unten (orange). Speichern → Fundnummer wird vergeben. |
 | 1:20 | **Suchen** | Demo-Hilfe → «Öffentliche Ansicht». Suche nach dem Begriff, Filter Organisation/Farbe. Detailansicht: Das interne Merkmal ist **nicht** sichtbar. |
-| 1:50 | **Rückgabe anfragen** | Formular mit Eigentumsnachweis → Bestätigung + Statusseite mit simulierter E-Mail. |
+| 1:50 | **Rückgabe anfragen** | Formular mit Eigentumsnachweis → Bestätigung + Statusseite mit Bestätigungs-E-Mail (bei eingerichtetem Versand landet sie im Postfach). |
 | 2:15 | **Anfrage bearbeiten** | Demo-Hilfe → zurück zur eigenen Organisation (oder Login). Anfragen → Nachweis neben internem Merkmal → «Bestätigen» → «Übergabe erfolgt». |
 | 2:40 | **Trennung + Abschluss** | Demo-Hilfe → «Berufsbildungszentrum Seetal»: Keine fremden Daten zu sehen. Optional: Verlustmeldungen mit «Weiss nicht». Fazit. |
 
@@ -33,19 +33,21 @@ Erstellt mit Claude (Anthropic) in einer Cowork-Sitzung am 22.10.2026. Grundlage
 
 **Von Claude erstellt:**
 - Projekt-Setup (Vite, TypeScript, Tailwind, Linting, Tests) und gesamte Ordnerstruktur
-- Supabase-Migrationen: Datenmodell, Row Level Security, RPC-Funktionen (Registrierung, Anfragen, Statuswechsel, Verlustmeldungen, simulierte E-Mails), Storage-Policies, Beispieldaten und Demo-Reset
+- Supabase-Migrationen: Datenmodell, Row Level Security, RPC-Funktionen (Registrierung, Anfragen, Statuswechsel, Verlustmeldungen, Nachrichten), Storage-Policies, Beispieldaten und Demo-Reset
 - Sämtlicher Frontend-Code (Seiten, Komponenten, Formulare mit Validierung, Datenzugriff)
 - Fachlogik als reine Funktionen (Abgleich, Filter, Statusregeln) mit Unit-Tests
+- E-Mail-Versand: Migration mit Versandstatus und pg_net-Trigger, Edge Function `send-email` für Resend (auf Wunsch des Teams nachträglich ergänzt)
 - Erfundene Beispieldaten (Organisationen, Personen, Gegenstände)
 - Diese Dokumentation (README, Präsentationsablauf, Testaufgaben)
 
-**Vom Team vorgegeben bzw. entschieden:** Auftrag, Anforderungen und Abnahmekriterien, Plattformname, Suchmodus (global + pro Organisation), Verlustmeldung mit Abgleich, Technikwahl (React/TypeScript/Tailwind, Supabase mit Migrationen), Sichtbarkeitsregel «Weiss nicht» → alle Organisationen, Abgleichsregel.
+**Vom Team vorgegeben bzw. entschieden:** Auftrag, Anforderungen und Abnahmekriterien, Plattformname, Suchmodus (global + pro Organisation), Verlustmeldung mit Abgleich, Technikwahl (React/TypeScript/Tailwind, Supabase mit Migrationen), Sichtbarkeitsregel «Weiss nicht» → alle Organisationen, Abgleichsregel, echter E-Mail-Versand über Resend an die tatsächlichen Empfänger (Simulation/Postausgang bleibt zusätzlich bestehen).
 
 **Von Claude angenommen** (kleine, reversible Gestaltungsentscheide): Farbpalette und Layout, Format der Fundnummer, Katalog zeigt «Reserviert» weiterhin an und blendet «Zurückgegeben» aus, Schalter «öffentlich sichtbar», nach der Rückgabe bleiben offene Anfragen bestehen.
 
 **Von Claude durchgeführte Prüfungen** (in seiner Arbeitsumgebung, nicht gegen euer Supabase-Projekt):
-- 17 Unit-Tests der Fachlogik (Vitest) – bestanden
-- 67 SQL-Prüfungen der Migrationen gegen Postgres 16 mit nachgebildetem Supabase-Schema (`db-tests/`): Organisationstrennung, öffentliche/interne Daten, Statusregeln, Registrierung, Reset – bestanden
+- 18 Unit-Tests der Fachlogik (Vitest) und 3 Tests der E-Mail-Hilfsfunktionen (Deno) – bestanden
+- Edge Function `send-email` lokal gegen eine Nachbildung der Resend-API: Erfolg, Fehler von Resend, falsches Secret, übersprungene Test-Adresse – bestanden. **Nicht** geprüft: der echte Versand über Resend (resend.com war aus der Testumgebung nicht erreichbar).
+- 77 SQL-Prüfungen der Migrationen gegen Postgres 16 mit nachgebildetem Supabase-Schema (`db-tests/`): Organisationstrennung, öffentliche/interne Daten, Statusregeln, Registrierung, Reset, Auslösen des E-Mail-Versands – bestanden
 - Ein automatisierter Browser-Durchlauf (Playwright) des gesamten Kernablaufs gegen eine lokale Nachbildung von Supabase (Postgres 16 + Supabase Auth v2.180 + PostgREST v12). Geprüft wurden Registrierung, Erfassen und Bearbeiten, Suche und Filter, Anfrage, Bestätigen, Rückgabe, Organisationswechsel, Verlustmeldung mit Treffer, Mobile-Ansicht und Reset – bestanden. **Nicht** geprüft: Foto-Upload (Supabase Storage war in der Nachbildung nicht verfügbar) und der Betrieb auf dem echten gehosteten Projekt.
 
 Keine dieser Prüfungen ersetzt eure eigenen Nutzertests. Testergebnisse mit Personen liegen noch keine vor.

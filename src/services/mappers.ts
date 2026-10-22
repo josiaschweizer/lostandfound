@@ -104,4 +104,7 @@ export const toEmail = (row: Row<'simulated_emails'>): SimulatedEmail => ({
   body: row.body,
   linkPath: row.link_path,
   createdAt: row.created_at,
+  deliveryStatus: row.delivery_status,
+  deliveryNote: row.delivery_note,
+  sentAt: row.sent_at,
 })
