@@ -4,7 +4,9 @@ import { Check, Lock, PackageCheck, X } from 'lucide-react'
 import { useStaffContext } from '@/app/useAuth'
 import { formatDateTime } from '@/domain/dates'
 import { canConfirmRequest, canRejectRequest } from '@/domain/workflow'
+import { draftDecisionText } from '@/services/ai'
 import { toUserMessage } from '@/services/errors'
+import { AiButton, AiNote } from '@/components/ai/AiButton'
 import { ItemImage } from '@/components/items/ItemVisual'
 import { ItemStatusBadge, RequestStatusBadge } from '@/components/items/StatusBadges'
 import { BackLink } from '@/components/ui/BackLink'
@@ -12,7 +14,9 @@ import { Button } from '@/components/ui/Button'
 import { Alert, EmptyState, ErrorState, Spinner } from '@/components/ui/Feedback'
 import { Field, Textarea } from '@/components/ui/Form'
 import { CardSection, DefinitionList, PageHeader } from '@/components/ui/Layout'
-import { useChangeItemStatus, useDecideRequest, useRequests, useStaffItem } from './queries'
+import { SimulatedEmailCard } from '@/components/items/SimulatedEmailCard'
+import { useChangeItemStatus, useDecideRequest, useOutbox, useRequests, useStaffItem } from './queries'
+import { RejectOpenRequests } from './RejectOpenRequests'
 
 type Mode = 'idle' | 'confirm' | 'reject'
 
@@ -25,9 +29,11 @@ export const RequestDetailPage = () => {
   const item = useStaffItem(request?.itemId ?? '')
   const decide = useDecideRequest()
   const changeStatus = useChangeItemStatus()
+  const outbox = useOutbox()
   const [mode, setMode] = useState<Mode>('idle')
   const [pickup, setPickup] = useState(organisation.office.pickupNotes ?? '')
   const [note, setNote] = useState('')
+  const [draft, setDraft] = useState<{ loading: boolean; error: string | null; done: Mode | null }>({ loading: false, error: null, done: null })
 
   if (requests.isPending || (request && item.isPending)) return <Spinner />
   if (requests.isError) return <ErrorState error={requests.error} />
@@ -37,6 +43,39 @@ export const RequestDetailPage = () => {
   const openOthers = others.filter((r) => r.status === 'open' || r.status === 'confirmed')
   const canConfirm = canConfirmRequest(request, item.data.status, others)
   const canReject = canRejectRequest(request)
+  const messages = (outbox.data ?? []).filter((m) => m.returnRequestId === request.id)
+
+  /** KI formuliert aus den Stichworten einen Text. Name, Kontakt und internes Erkennungsmerkmal werden nicht mitgeschickt. */
+  const draftText = async (kind: 'confirm' | 'reject') => {
+    setDraft({ loading: true, error: null, done: null })
+    try {
+      const text = await draftDecisionText({
+        kind,
+        itemTitle: item.data!.title,
+        itemNumber: item.data!.itemNumber,
+        officeName: organisation.office.name,
+        officeLocation: organisation.office.location,
+        openingHours: organisation.office.openingHours,
+        pickupNotes: organisation.office.pickupNotes ?? '',
+        notes: kind === 'confirm' ? pickup : note,
+      })
+      if (kind === 'confirm') setPickup(text)
+      else setNote(text)
+      setDraft({ loading: false, error: null, done: kind === 'confirm' ? 'confirm' : 'reject' })
+    } catch (error) {
+      setDraft({ loading: false, error: toUserMessage(error), done: null })
+    }
+  }
+
+  const aiRow = (kind: 'confirm' | 'reject') => (
+    <div className="flex flex-wrap items-center gap-3">
+      <AiButton onClick={() => draftText(kind)} loading={draft.loading}>
+        Text formulieren
+      </AiButton>
+      {draft.done === kind && <AiNote />}
+      {draft.error && <p className="text-xs font-medium text-red-700">{draft.error}</p>}
+    </div>
+  )
 
   const submitDecision = (confirm: boolean) =>
     decide.mutate(
@@ -49,7 +88,7 @@ export const RequestDetailPage = () => {
       <BackLink to="/verwaltung/anfragen" label="Zu den Anfragen" />
       <PageHeader eyebrow="Rückgabeanfrage" title={request.claimantName} actions={<RequestStatusBadge status={request.status} />} />
 
-      {openOthers.length > 0 && (
+      {openOthers.length > 0 && request.status !== 'completed' && (
         <Alert tone="warning" title={`${openOthers.length} weitere Anfrage${openOthers.length > 1 ? 'n' : ''} für diesen Gegenstand`}>
           Vergleichen Sie die Eigentumsnachweise, bevor Sie bestätigen.{' '}
           {openOthers.map((o, i) => (
@@ -121,7 +160,12 @@ export const RequestDetailPage = () => {
             </div>
           </div>
         )}
-        {request.status === 'completed' && <Alert tone="success" title="Abgeschlossen">Der Gegenstand wurde dieser Person übergeben.</Alert>}
+        {request.status === 'completed' && (
+          <div className="space-y-3">
+            <Alert tone="success" title="Abgeschlossen">Der Gegenstand wurde dieser Person übergeben.</Alert>
+            <RejectOpenRequests requests={others} />
+          </div>
+        )}
         {request.status === 'rejected' && (
           <Alert tone="info" title="Abgelehnt">
             {request.decisionNote ?? 'Ohne Begründung.'}
@@ -149,6 +193,7 @@ export const RequestDetailPage = () => {
             <Field label="Abholhinweise für die suchende Person" required hint="Werden in der Bestätigung per E-Mail und auf der Statusseite angezeigt.">
               {(p) => <Textarea rows={3} value={pickup} onChange={(e) => setPickup(e.target.value)} {...p} />}
             </Field>
+            {aiRow('confirm')}
             <p className="text-sm text-stone-600">
               Ort: {organisation.office.location} · {organisation.office.openingHours}
             </p>
@@ -164,9 +209,10 @@ export const RequestDetailPage = () => {
         )}
         {mode === 'reject' && (
           <div className="space-y-4">
-            <Field label="Begründung" hint="Wird der suchenden Person per E-Mail mitgeteilt.">
+            <Field label="Begründung" hint="Wird der suchenden Person per E-Mail mitgeteilt. Tipp: Stichworte eingeben und «Text formulieren» wählen.">
               {(p) => <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} {...p} />}
             </Field>
+            {aiRow('reject')}
             <div className="flex gap-2">
               <Button variant="danger" loading={decide.isPending} onClick={() => submitDecision(false)}>
                 Anfrage ablehnen
@@ -180,6 +226,16 @@ export const RequestDetailPage = () => {
         {decide.isError && <Alert tone="error" className="mt-3">{toUserMessage(decide.error)}</Alert>}
         {changeStatus.isError && <Alert tone="error" className="mt-3">{toUserMessage(changeStatus.error)}</Alert>}
       </CardSection>
+
+      {messages.length > 0 && (
+        <CardSection title="Nachrichten an diese Person" description="Bestätigung und Entscheid, wie sie per E-Mail versendet wurden.">
+          <div className="space-y-3">
+            {messages.map((email) => (
+              <SimulatedEmailCard key={email.id} email={email} />
+            ))}
+          </div>
+        </CardSection>
+      )}
     </div>
   )
 }

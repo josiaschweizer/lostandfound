@@ -52,7 +52,7 @@ pnpm dev                       # http://localhost:5173
 
 ## 2. Demo-Zugänge und Rollenwechsel
 
-Unten rechts auf jeder Seite gibt es den Knopf **«Demo-Hilfe»**. Damit:
+Unten rechts gibt es den Knopf **«Demo-Hilfe»** – lokal (`pnpm dev`) immer, auf der Online-Version erst nach einmaligem Aufruf mit `?demo=1` (z. B. `https://…/?demo=1`; `?demo=0` blendet sie wieder aus). Damit:
 
 - **Rolle wechseln:** «Öffentliche Ansicht» (Suchende) oder eine der drei Beispiel-Organisationen, mit einem Klick
 - **Eigene Links öffnen:** Anfragen und Verlustmeldungen, die in diesem Browser gesendet wurden
@@ -126,6 +126,43 @@ Ohne diese Schritte funktioniert alles wie bisher, Nachrichten erscheinen dann n
 5. Testen: öffentlich eine Rückgabe anfragen und als Kontakt die eigene E-Mail-Adresse angeben. Im Postausgang der Organisation steht danach «E-Mail versendet». Bei «Versand fehlgeschlagen» steht der Grund direkt unter der Nachricht. Logs gibt es unter *Edge Functions → send-email → Logs*.
 
 Versand wieder ausschalten: `select vault.delete_secret(id) from vault.secrets where name = 'email_function_url';` (oder im Dashboard unter *Vault*).
+
+## 4b. KI-Funktionen einrichten (optional)
+
+Ohne Key funktioniert alles wie bisher, die KI-Knöpfe melden dann «Die KI ist nicht eingerichtet».
+
+**Ablauf:** Browser → Edge Function `ai` → KI-Anbieter (OpenAI-kompatible API). Der API-Key liegt nur als Supabase-Secret auf dem Server, nie im Frontend.
+
+| Funktion | Wo | Wer |
+|---|---|---|
+| Fund-Assistent (Chat, findet echte Funde per Tool Calling) | Schaltfläche «Fragen?» unten rechts | alle |
+| KI-Schalter im Suchfeld: ergänzt die normalen Treffer um anders beschriebene Gegenstände (mit Einschätzung und Begründung) | Suche, Seite einer Fundstelle | alle |
+| «Formular ausfüllen»: Freitext → Felder | Verlust melden | alle |
+| «Beschreibung vorschlagen» | Fundgegenstand erfassen/bearbeiten | Mitarbeitende |
+| «Text formulieren»: Abholhinweise / Ablehnung | Anfrage bestätigen/ablehnen | Mitarbeitende |
+| «KI-Abgleich»: Verlustmeldung ↔ Funde mit Einschätzung und Begründung | Statusseite der Verlustmeldung, Verlustmeldungen, Gegenstand-Detail | alle / Mitarbeitende |
+| «Angaben aus Foto erkennen» inkl. Warnung bei sichtbaren persönlichen Angaben | Fundgegenstand erfassen/bearbeiten | Mitarbeitende |
+
+**Datenschutz:** Interne Angaben (Erkennungsmerkmal, Lagerort, interne Notiz) sowie Namen und Kontaktdaten von Suchenden werden nie an die KI geschickt. Der Chat liest nur den öffentlichen Katalog und kann nichts verändern. Ergebnisse der KI sind immer Vorschläge, die ein Mensch prüft.
+
+**KI-Abgleich:** Ergänzt die feste Regel (`matching.ts`). Kandidaten sind alle Funde im selben Zeitfenster (0–30 Tage nach dem Verlust, gleiche Organisation bzw. «Weiss nicht»), auch mit anderer Kategorie – höchstens 20 pro Abgleich. Die KI bewertet jeden Kandidaten mit 0–100 und einer kurzen Begründung; angezeigt wird ab 50.
+
+**Rate-Limit:** 20 KI-Anfragen pro 5 Minuten und IP (Mitarbeitende: 40 pro Konto), gezählt in der Tabelle `ai_requests` (IP nur als Hash). Die harte Kostengrenze bleibt das Guthaben beim Anbieter.
+
+1. API-Key beim Anbieter erstellen und Guthaben bzw. ein Ausgabenlimit setzen.
+2. Secrets setzen (Beispiel DeepSeek; `AI_BASE_URL` und `AI_MODEL` sind optional, Standard ist DeepSeek):
+   ```bash
+   pnpm exec supabase secrets set \
+     AI_API_KEY=sk-xxx \
+     AI_BASE_URL=https://api.deepseek.com \
+     AI_MODEL=deepseek-flash
+   pnpm exec supabase db push    # Migration für das Rate-Limit (ohne Beispieldaten neu einzuspielen)
+   pnpm fn:deploy:ai
+   ```
+   Optional `AI_VISION_MODEL`, falls für Fotos ein anderes Modell nötig ist (Standard: wie `AI_MODEL`). Unterstützt das Modell keine Bilder, meldet «Angaben aus Foto erkennen» das direkt.
+   Andere Anbieter, nur `AI_BASE_URL` und `AI_MODEL` ändern: OpenAI `https://api.openai.com/v1`, Google Gemini `https://generativelanguage.googleapis.com/v1beta/openai`, Groq `https://api.groq.com/openai/v1`.
+3. Lokal testen (optional): Werte in `supabase/functions/.env` eintragen (wird nicht committet) und `pnpm exec supabase functions serve ai` starten.
+4. Logs: Supabase-Dashboard → *Edge Functions → ai → Logs*.
 
 ## 5. Einschränkungen
 

@@ -1,7 +1,8 @@
 import { useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { ArrowRight, Building2, ClipboardList, PackagePlus, Search, ShieldCheck } from 'lucide-react'
+import { ArrowRight, Building2, ClipboardList, MessageCircle, PackagePlus, Search, ShieldCheck } from 'lucide-react'
 import { ORGANISATION_TYPE_LABELS } from '@/domain/labels'
+import { useDock } from '@/app/dock'
 import { useAuth } from '@/app/useAuth'
 import { ITEM_GRID, ItemCard } from '@/components/items/ItemCard'
 import { Button, ButtonLink } from '@/components/ui/Button'
@@ -14,6 +15,7 @@ export const HomePage = () => {
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
   const { membership } = useAuth()
+  const { setOpenPanel } = useDock()
   const organisations = useOrganisations()
   const catalog = useCatalog()
   const lookup = useOrganisationLookup()
@@ -42,7 +44,7 @@ export const HomePage = () => {
             <Input
               id="home-search"
               type="search"
-              placeholder="z. B. Rucksack, Kopfhörer, Schlüssel"
+              placeholder="z. B. Rucksack, Natel, Schlüssel"
               className="h-12 text-base"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -63,10 +65,22 @@ export const HomePage = () => {
 
       <section aria-labelledby="actions-title" className="grid gap-4 md:grid-cols-3">
         <h2 id="actions-title" className="sr-only">
-          Häufige Aktionen
+          Weitere Wege
         </h2>
-        <ActionCard icon={<Search />} title="Gegenstand suchen" text="In allen Fundstellen oder gezielt bei einer Organisation suchen." to="/suche" cta="Zur Suche" />
-        <ActionCard icon={<ClipboardList />} title="Verlust melden" text="Beschreiben, was fehlt – mögliche Treffer erscheinen sofort." to="/verlust-melden" cta="Meldung erfassen" />
+        <ActionCard
+          icon={<ClipboardList />}
+          title="Verlust melden"
+          text="Noch nicht abgegeben? Beschreiben Sie, was fehlt – die Fundstellen sehen Ihre Meldung und melden sich bei einem Treffer."
+          to="/verlust-melden"
+          cta="Meldung erfassen"
+        />
+        <ActionCard
+          icon={<MessageCircle />}
+          title="Assistent fragen"
+          text="Erzählen Sie in eigenen Worten, was Sie verloren haben – der Assistent sucht für Sie und erklärt die nächsten Schritte."
+          onClick={() => setOpenPanel('assistant')}
+          cta="Assistent öffnen"
+        />
         {membership ? (
           <ActionCard icon={<PackagePlus />} title="Fundgegenstand erfassen" text="Neuen Fund für Ihre Fundstelle aufnehmen." to="/verwaltung/neu" cta="Erfassen" highlight />
         ) : (
@@ -98,7 +112,7 @@ export const HomePage = () => {
         <h2 id="orgs-title" className="mb-1 text-xl font-semibold">
           Fundstellen
         </h2>
-        <p className="mb-4 text-stone-600">Sie wissen, wo Sie etwas verloren haben? Suchen Sie direkt bei dieser Organisation.</p>
+        <p className="mb-4 text-stone-600">Sie wissen, wo Sie etwas verloren haben? Suchen Sie direkt bei dieser Fundstelle.</p>
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {(organisations.data ?? []).map((org) => (
             <li key={org.id}>
@@ -127,13 +141,30 @@ export const HomePage = () => {
   )
 }
 
-const ActionCard = ({ icon, title, text, to, cta, highlight }: { icon: ReactNode; title: string; text: string; to: string; cta: string; highlight?: boolean }) => (
+interface ActionCardProps {
+  icon: ReactNode
+  title: string
+  text: string
+  cta: string
+  highlight?: boolean
+  /** Ziel-Link – oder alternativ eine Aktion (z. B. Assistent öffnen). */
+  to?: string
+  onClick?: () => void
+}
+
+const ActionCard = ({ icon, title, text, to, onClick, cta, highlight }: ActionCardProps) => (
   <Card className="flex flex-col p-6">
     <div className="mb-4 flex size-11 items-center justify-center rounded-xl bg-brand-50 text-brand-700 [&_svg]:size-5">{icon}</div>
     <h3 className="font-semibold">{title}</h3>
     <p className="mt-1 mb-5 flex-1 text-sm text-stone-600">{text}</p>
-    <ButtonLink to={to} variant={highlight ? 'primary' : 'secondary'} className="self-start">
-      {cta}
-    </ButtonLink>
+    {to ? (
+      <ButtonLink to={to} variant={highlight ? 'primary' : 'secondary'} className="self-start">
+        {cta}
+      </ButtonLink>
+    ) : (
+      <Button variant={highlight ? 'primary' : 'secondary'} className="self-start" onClick={onClick}>
+        {cta}
+      </Button>
+    )}
   </Card>
 )

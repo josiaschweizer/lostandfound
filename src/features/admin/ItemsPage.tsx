@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router'
-import { ChevronRight, EyeOff, Inbox, PackagePlus, PackageSearch, RotateCcw } from 'lucide-react'
+import { CheckCircle2, ChevronRight, EyeOff, Inbox, PackagePlus, PackageSearch, RotateCcw } from 'lucide-react'
 import { EMPTY_FILTERS, filterCatalog } from '@/domain/catalog'
 import { formatDate } from '@/domain/dates'
 import { CATEGORY_LABELS, ITEM_STATUS_LABELS, toOptions } from '@/domain/labels'
@@ -13,7 +13,7 @@ import { EmptyState, ErrorState, Spinner } from '@/components/ui/Feedback'
 import { Input, Select } from '@/components/ui/Form'
 import { Card, PageHeader } from '@/components/ui/Layout'
 import { cn } from '@/components/ui/cn'
-import { useRequests, useStaffItems } from './queries'
+import { useRequests, useStaffItems, useStaffTodo } from './queries'
 
 type StatusFilter = ItemStatus | 'all'
 
@@ -22,6 +22,7 @@ export const ItemsPage = () => {
   const { organisation } = useStaffContext()
   const items = useStaffItems()
   const requests = useRequests()
+  const todo = useStaffTodo()
   const [status, setStatus] = useState<StatusFilter>('all')
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState<ItemCategory | ''>('')
@@ -61,16 +62,22 @@ export const ItemsPage = () => {
         }
       />
 
-      <div className="mb-6 grid gap-3 sm:grid-cols-3">
-        <StatCard label="Verfügbar" value={counts.available} />
-        <StatCard label="Reserviert" value={counts.reserved} />
-        <Link to="/verwaltung/anfragen" className="rounded-2xl bg-brand-600 p-4 text-white shadow-xs transition hover:bg-brand-700">
-          <p className="text-sm text-brand-100">Offene Anfragen</p>
-          <p className="mt-1 flex items-center justify-between text-2xl font-semibold">
-            {openRequests.length} <ChevronRight className="size-5" aria-hidden />
+      <section aria-labelledby="todo-title" className="mb-6">
+        <h2 id="todo-title" className="mb-2 text-sm font-semibold text-stone-700">
+          Zu erledigen
+        </h2>
+        {!todo.isLoading && todo.openRequests + todo.awaitingPickup + todo.reportsWithMatches === 0 ? (
+          <p className="flex items-center gap-2 rounded-2xl bg-emerald-50 p-4 text-sm text-emerald-900 ring-1 ring-emerald-200">
+            <CheckCircle2 className="size-5 text-emerald-600" aria-hidden /> Alles erledigt – keine offenen Anfragen und keine neuen Treffer zu Verlustmeldungen.
           </p>
-        </Link>
-      </div>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-3">
+            <TodoCard to="/verwaltung/anfragen" count={todo.openRequests} label="Anfragen prüfen" hint="Eigentumsnachweis vergleichen" />
+            <TodoCard to="/verwaltung/anfragen?status=confirmed" count={todo.awaitingPickup} label="Abholung ausstehend" hint="Nach der Übergabe abschliessen" />
+            <TodoCard to="/verwaltung/meldungen" count={todo.reportsWithMatches} label="Verlustmeldungen mit Treffer" hint="Person benachrichtigen" />
+          </div>
+        )}
+      </section>
 
       <Card className="mb-4 space-y-3 p-4">
         <div className="flex flex-wrap gap-1" role="tablist" aria-label="Nach Status filtern">
@@ -146,9 +153,18 @@ export const ItemsPage = () => {
   )
 }
 
-const StatCard = ({ label, value }: { label: string; value: number }) => (
-  <div className="rounded-2xl bg-white p-4 shadow-xs ring-1 ring-stone-200">
-    <p className="text-sm text-stone-500">{label}</p>
-    <p className="mt-1 text-2xl font-semibold">{value}</p>
-  </div>
+const TodoCard = ({ to, count, label, hint }: { to: string; count: number; label: string; hint: string }) => (
+  <Link
+    to={to}
+    className={cn(
+      'rounded-2xl p-4 shadow-xs ring-1 transition',
+      count > 0 ? 'bg-brand-600 text-white ring-brand-600 hover:bg-brand-700' : 'bg-white text-stone-500 ring-stone-200 hover:ring-stone-300',
+    )}
+  >
+    <p className="flex items-center justify-between text-2xl font-semibold">
+      {count} <ChevronRight className="size-5" aria-hidden />
+    </p>
+    <p className={cn('text-sm font-medium', count > 0 ? 'text-white' : 'text-stone-700')}>{label}</p>
+    <p className={cn('text-xs', count > 0 ? 'text-brand-100' : 'text-stone-500')}>{hint}</p>
+  </Link>
 )

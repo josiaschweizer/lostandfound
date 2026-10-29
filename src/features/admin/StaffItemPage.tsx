@@ -1,12 +1,17 @@
 import { useMemo } from 'react'
+import { useMutation } from '@tanstack/react-query'
 import { Link, useLocation, useParams } from 'react-router'
 import { BellRing, ExternalLink, Lock, Pencil } from 'lucide-react'
 import { formatDate, formatDateTime } from '@/domain/dates'
 import { CATEGORY_LABELS, ITEM_STATUS_LABELS } from '@/domain/labels'
+import { pickAiMatches, reportCandidatesForItem, toFoundDescription, toLostDescription } from '@/domain/aiMatching'
 import { findMatches } from '@/domain/matching'
 import { allowedItemStatuses, pendingAfterReturn } from '@/domain/workflow'
 import type { ItemStatus } from '@/domain/types'
+import { rankMatches } from '@/services/ai'
 import { toUserMessage } from '@/services/errors'
+import { AiButton } from '@/components/ai/AiButton'
+import { AiReason, AiScoreBadge } from '@/components/ai/AiMatch'
 import { ColorDot, ItemImage } from '@/components/items/ItemVisual'
 import { ItemStatusBadge, RequestStatusBadge } from '@/components/items/StatusBadges'
 import { BackLink } from '@/components/ui/BackLink'
@@ -14,6 +19,7 @@ import { Button, ButtonLink } from '@/components/ui/Button'
 import { Alert, EmptyState, ErrorState, Spinner } from '@/components/ui/Feedback'
 import { Card, CardSection, DefinitionList, PageHeader } from '@/components/ui/Layout'
 import { useChangeItemStatus, useLossReports, useNotifyMatch, useRequests, useStaffItem } from './queries'
+import { RejectOpenRequests } from './RejectOpenRequests'
 
 const STATUS_ACTION_LABELS: Record<ItemStatus, string> = {
   available: 'Als verfügbar markieren',
@@ -39,6 +45,15 @@ export const StaffItemPage = () => {
     return (lossReports.data ?? []).filter((r) => r.status === 'open' && findMatches(r, [current]).length > 0)
   }, [item.data, lossReports.data])
 
+  // KI-Abgleich: auch Meldungen mit anderer Kategorie oder Wortwahl (gleiches Zeitfenster, offene Meldungen).
+  const aiCandidates = useMemo(
+    () => (item.data?.isPublic ? reportCandidatesForItem(item.data, lossReports.data ?? []) : []),
+    [item.data, lossReports.data],
+  )
+  const ai = useMutation({
+    mutationFn: () => rankMatches({ lost: aiCandidates.map(toLostDescription), found: [toFoundDescription(item.data!)] }),
+  })
+
   if (item.isPending) return <Spinner />
   if (item.isError) return <ErrorState error={item.error} />
   if (!item.data) return <EmptyState title="Gegenstand nicht gefunden">Er gehört nicht zu Ihrer Organisation.</EmptyState>
@@ -46,6 +61,9 @@ export const StaffItemPage = () => {
   const data = item.data
   const nextStatuses = allowedItemStatuses(data.status, itemRequests)
   const stillOpen = pendingAfterReturn(data.status, itemRequests)
+  const shownReports = ai.isSuccess
+    ? pickAiMatches(aiCandidates, ai.data).map(({ entry, score, reason }) => ({ report: entry, score, reason }))
+    : matchingReports.map((report) => ({ report, score: null as number | null, reason: '' }))
 
   return (
     <div className="space-y-6">
@@ -133,56 +151,91 @@ export const StaffItemPage = () => {
 
         <div className="space-y-6">
           <CardSection title="Status">
-            <div className="mb-4">
+            <div className="mb-3">
               <ItemStatusBadge status={data.status} />
             </div>
-            <div className="flex flex-col gap-2">
-              {nextStatuses.map((s) => (
-                <Button
-                  key={s}
-                  variant={s === 'returned' ? 'success' : 'secondary'}
-                  loading={changeStatus.isPending && changeStatus.variables?.status === s}
-                  disabled={changeStatus.isPending}
-                  onClick={() => changeStatus.mutate({ id, status: s })}
-                >
-                  {STATUS_ACTION_LABELS[s]}
-                </Button>
-              ))}
-            </div>
-            {itemRequests.some((r) => r.status === 'confirmed') && (
-              <p className="mt-3 text-xs text-stone-500">«{ITEM_STATUS_LABELS.available}» ist erst möglich, wenn die bestätigte Anfrage abgelehnt wurde.</p>
+            <p className="text-sm text-stone-600">
+              Der Status ändert sich normalerweise über die Anfragen: <strong>Bestätigen</strong> reserviert den Gegenstand, <strong>«Übergabe erfolgt»</strong>{' '}
+              schliesst die Rückgabe ab.
+            </p>
+            {stillOpen.length > 0 && data.status === 'returned' && (
+              <div className="mt-3">
+                <RejectOpenRequests requests={itemRequests} />
+              </div>
+            )}
+            {nextStatuses.length > 0 && (
+              <details className="group mt-4 rounded-lg bg-stone-50 p-3 text-sm">
+                <summary className="cursor-pointer font-medium text-stone-700">Status manuell ändern (Sonderfälle)</summary>
+                <p className="mt-2 text-xs text-stone-500">z. B. wenn ein Gegenstand ohne Anfrage direkt am Schalter abgeholt wurde.</p>
+                <div className="mt-3 flex flex-col gap-2">
+                  {nextStatuses.map((s) => (
+                    <Button
+                      key={s}
+                      size="sm"
+                      variant={s === 'returned' ? 'success' : 'secondary'}
+                      loading={changeStatus.isPending && changeStatus.variables?.status === s}
+                      disabled={changeStatus.isPending}
+                      onClick={() => changeStatus.mutate({ id, status: s })}
+                    >
+                      {STATUS_ACTION_LABELS[s]}
+                    </Button>
+                  ))}
+                </div>
+                {itemRequests.some((r) => r.status === 'confirmed') && (
+                  <p className="mt-3 text-xs text-stone-500">«{ITEM_STATUS_LABELS.available}» ist erst möglich, wenn die bestätigte Anfrage abgelehnt wurde.</p>
+                )}
+              </details>
             )}
             {changeStatus.isError && <Alert tone="error" className="mt-3">{toUserMessage(changeStatus.error)}</Alert>}
-            {stillOpen.length > 0 && (
-              <Alert tone="warning" className="mt-3">
-                {stillOpen.length} offene Anfrage{stillOpen.length > 1 ? 'n' : ''} – bitte bewusst ablehnen.
-              </Alert>
-            )}
           </CardSection>
 
-          {matchingReports.length > 0 && (
-            <CardSection title="Passende Verlustmeldungen" description="Nach Kategorie, Datum und Farbe. Die Person erhält eine E-Mail.">
-              <ul className="space-y-3">
-                {matchingReports.map((r) => (
-                  <li key={r.id} className="rounded-lg bg-stone-50 p-3 text-sm">
-                    <p className="font-medium">{r.title}</p>
-                    <p className="text-xs text-stone-500">
-                      {r.reporterName} · verloren am {formatDate(r.lostOn)}
-                      {!r.organisationId && ' · «Weiss nicht»'}
-                    </p>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      className="mt-2"
-                      icon={<BellRing className="size-4" />}
-                      loading={notify.isPending && notify.variables?.reportId === r.id}
-                      onClick={() => notify.mutate({ reportId: r.id, itemId: id })}
-                    >
-                      Person benachrichtigen
-                    </Button>
-                  </li>
-                ))}
-              </ul>
+          {(matchingReports.length > 0 || aiCandidates.length > 0) && (
+            <CardSection
+              title="Passende Verlustmeldungen"
+              description={
+                ai.isSuccess
+                  ? 'Von der KI bewertet – auch mit anderer Kategorie oder Wortwahl. Nur Vorschläge.'
+                  : 'Nach Kategorie, Datum und Farbe. Die Person erhält eine E-Mail.'
+              }
+            >
+              <div className="mb-3 flex flex-wrap gap-2">
+                <AiButton onClick={() => ai.mutate()} loading={ai.isPending} disabled={aiCandidates.length === 0}>
+                  {ai.isSuccess ? 'Erneut abgleichen' : 'KI-Abgleich'}
+                </AiButton>
+                {ai.isSuccess && (
+                  <Button size="sm" variant="ghost" onClick={() => ai.reset()}>
+                    Regel-Treffer zeigen
+                  </Button>
+                )}
+              </div>
+              {ai.isError && <p className="mb-2 text-xs font-medium text-red-700">{toUserMessage(ai.error)}</p>}
+              {shownReports.length === 0 ? (
+                <p className="text-sm text-stone-500">{ai.isSuccess ? 'Die KI hat keine wahrscheinliche Meldung gefunden.' : 'Keine Meldung nach fester Regel.'}</p>
+              ) : (
+                <ul className="space-y-3">
+                  {shownReports.map(({ report: r, score, reason }) => (
+                    <li key={r.id} className="space-y-1 rounded-lg bg-stone-50 p-3 text-sm">
+                      <p className="font-medium">{r.title}</p>
+                      <p className="text-xs text-stone-500">
+                        {r.reporterName} · verloren am {formatDate(r.lostOn)}
+                        {!r.organisationId && ' · «Weiss nicht»'}
+                      </p>
+                      {score !== null && <AiScoreBadge score={score} />}
+                      <AiReason>{reason}</AiReason>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="mt-1"
+                        icon={<BellRing className="size-4" />}
+                        loading={notify.isPending && notify.variables?.reportId === r.id}
+                        onClick={() => notify.mutate({ reportId: r.id, itemId: id })}
+                      >
+                        Person benachrichtigen
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
               {notify.isSuccess && (
                 <Alert tone={notify.data ? 'success' : 'info'} className="mt-3">
                   {notify.data ? 'Benachrichtigung erstellt (siehe Postausgang).' : 'Diese Person wurde zu diesem Gegenstand bereits benachrichtigt.'}

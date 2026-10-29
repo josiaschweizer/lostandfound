@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Link, useNavigate } from 'react-router'
+import { Link, useLocation, useNavigate } from 'react-router'
 import { FlaskConical, RotateCcw, X } from 'lucide-react'
+import { useDock } from '@/app/dock'
 import { useAuth } from '@/app/useAuth'
+import { resolveDemoMode } from '@/lib/demoMode'
 import { clearSavedLinks, linkPath, loadSavedLinks } from '@/lib/localTokens'
 import { signIn, signOut } from '@/services/auth'
 import { DEMO_ACCOUNTS, DEMO_PASSWORD, resetDemo } from '@/services/demo'
@@ -13,10 +15,12 @@ import { cn } from '@/components/ui/cn'
 
 /**
  * Demo-Hilfe (nur für Nutzertests/Präsentation): Rollenwechsel, eigene Links, Reset.
- * Bewusst klar gekennzeichnet – keine Funktion der echten Plattform.
+ * Bewusst klar gekennzeichnet – keine Funktion der echten Plattform. Online nur mit «?demo=1» sichtbar (siehe demoMode.ts).
  */
 export const DemoPanel = () => {
-  const [open, setOpen] = useState(false)
+  const { openPanel, setOpenPanel } = useDock()
+  const open = openPanel === 'demo'
+  const setOpen = (value: boolean) => setOpenPanel(value ? 'demo' : null)
   const [confirmReset, setConfirmReset] = useState(false)
   const { session } = useAuth()
   const navigate = useNavigate()
@@ -55,13 +59,18 @@ export const DemoPanel = () => {
     },
   })
 
+  const { search } = useLocation()
+  const enabled = useMemo(() => resolveDemoMode(search), [search])
+
   const currentEmail = session?.user.email ?? null
   const roles = [{ email: null, label: 'Öffentliche Ansicht', sub: 'Suchende, ohne Anmeldung' }, ...DEMO_ACCOUNTS.map((a) => ({ email: a.email, label: a.organisation, sub: a.name }))]
 
+  if (!enabled) return null
+
   return (
-    <div className="fixed right-4 bottom-4 z-50 print:hidden">
+    <div>
       {open ? (
-        <div className="w-80 max-w-[calc(100vw-2rem)] rounded-2xl bg-white p-4 shadow-xl ring-1 ring-accent-600/30" role="dialog" aria-label="Demo-Hilfe">
+        <div className="max-h-[calc(100dvh-6rem)] w-80 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-2xl bg-white p-4 shadow-xl ring-1 ring-accent-600/30" role="dialog" aria-label="Demo-Hilfe">
           <div className="mb-3 flex items-center justify-between">
             <p className="flex items-center gap-2 text-sm font-semibold text-accent-700">
               <FlaskConical className="size-4" aria-hidden /> Demo-Hilfe

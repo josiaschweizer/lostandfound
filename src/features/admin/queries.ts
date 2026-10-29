@@ -1,6 +1,8 @@
+import { useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useStaffContext } from '@/app/useAuth'
 import { queryKeys } from '@/lib/queryKeys'
+import { findMatches } from '@/domain/matching'
 import type { ItemStatus } from '@/domain/types'
 import { listOutbox } from '@/services/emails'
 import { closeLossReport, listLossReports, notifyMatch } from '@/services/lossReports'
@@ -92,4 +94,40 @@ export const useUpdateOffice = () => {
     mutationFn: ({ officeId, input }: { officeId: string; input: OfficeUpdate }) => updateOffice(officeId, input),
     onSuccess: () => queryClient.invalidateQueries(),
   })
+}
+
+/** Standardtext, wenn Anfragen abgelehnt werden, weil der Gegenstand bereits übergeben wurde. */
+export const ALREADY_RETURNED_NOTE =
+  'Der Gegenstand wurde inzwischen nach Prüfung der Eigentumsnachweise einer anderen Person übergeben. Falls Sie etwas anderes verloren haben, melden Sie den Verlust gerne auf der Plattform.'
+
+/** Lehnt mehrere Anfragen nacheinander ab (z. B. alle übrigen nach einer Übergabe). */
+export const useRejectRequests = () => {
+  const invalidate = useInvalidateAll()
+  return useMutation({
+    mutationFn: async ({ ids, note }: { ids: string[]; note: string }) => {
+      for (const id of ids) await decideRequest(id, { confirm: false, note })
+      return ids.length
+    },
+    onSettled: invalidate,
+  })
+}
+
+/**
+ * Was die Fundstelle jetzt erledigen sollte – für die Startseite der Verwaltung und die Navigation.
+ * Treffer nach fester Regel, nur öffentliche Gegenstände (wie in der Liste der Verlustmeldungen).
+ */
+export const useStaffTodo = () => {
+  const requests = useRequests()
+  const items = useStaffItems()
+  const reports = useLossReports()
+  return useMemo(() => {
+    const publicItems = (items.data ?? []).filter((i) => i.isPublic)
+    const openReports = (reports.data ?? []).filter((r) => r.status === 'open')
+    return {
+      isLoading: requests.isPending || items.isPending || reports.isPending,
+      openRequests: (requests.data ?? []).filter((r) => r.status === 'open').length,
+      awaitingPickup: (requests.data ?? []).filter((r) => r.status === 'confirmed').length,
+      reportsWithMatches: openReports.filter((r) => findMatches(r, publicItems).length > 0).length,
+    }
+  }, [requests.data, requests.isPending, items.data, items.isPending, reports.data, reports.isPending])
 }

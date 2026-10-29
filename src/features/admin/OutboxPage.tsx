@@ -8,7 +8,7 @@ export const OutboxPage = () => {
   const outbox = useOutbox()
   return (
     <div className="mx-auto max-w-3xl">
-      <PageHeader title="Postausgang" description="Benachrichtigungen Ihrer Fundstelle." />
+      <PageHeader title="Gesendete Nachrichten" description="Alle Benachrichtigungen Ihrer Fundstelle. Die Nachrichten zu einer Anfrage sehen Sie auch direkt bei der Anfrage." />
       <Alert tone="info" className="mb-6" title="Versand">
         Alle Nachrichten werden hier protokolliert. Ist der E-Mail-Versand eingerichtet (siehe README), gehen sie zusätzlich über Resend an echte
         Adressen. Erfundene Test-Adressen (z. B. @example.com) und Telefonnummern werden nie angeschrieben.

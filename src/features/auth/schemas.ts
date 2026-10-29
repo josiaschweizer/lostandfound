@@ -39,3 +39,7 @@ export const officeSchema = z.object({
   pickupNotes: z.string().trim().max(500),
 })
 export type OfficeForm = z.infer<typeof officeSchema>
+
+/** Organisation und Fundstelle in einem Schritt (Version 1: genau eine Fundstelle pro Organisation). */
+export const setupSchema = organisationSchema.extend(officeSchema.shape)
+export type SetupForm = z.infer<typeof setupSchema>

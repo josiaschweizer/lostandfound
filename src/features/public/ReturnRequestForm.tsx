@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation } from '@tanstack/react-query'
 import { Link } from 'react-router'
@@ -10,6 +10,7 @@ import type { FoundItem } from '@/domain/types'
 import { Button } from '@/components/ui/Button'
 import { Alert } from '@/components/ui/Feedback'
 import { Field, Input, RequiredNote, Textarea } from '@/components/ui/Form'
+import { ContactHint } from './ContactHint'
 import { returnRequestSchema, type ReturnRequestForm as FormValues } from './schemas'
 
 export const ReturnRequestForm = ({ item }: { item: FoundItem }) => {
@@ -26,6 +27,8 @@ export const ReturnRequestForm = ({ item }: { item: FoundItem }) => {
     },
   })
 
+  const contact = useWatch({ control: form.control, name: 'contact' })
+
   if (token) {
     return (
       <div className="space-y-4">
@@ -37,7 +40,7 @@ export const ReturnRequestForm = ({ item }: { item: FoundItem }) => {
           <Link to={`/status/anfrage/${token}`} className="font-medium text-brand-700 underline underline-offset-2">
             Anfrage verfolgen
           </Link>
-          . Bitte speichern Sie den Link. Eine Bestätigung erhalten Sie zusätzlich per E-Mail, sofern Sie eine E-Mail-Adresse angegeben haben.
+          . Sie finden die Anfrage auch jederzeit unter «Meine Anfragen» oben im Menü. Eine Bestätigung erhalten Sie zusätzlich per E-Mail, sofern Sie eine E-Mail-Adresse angegeben haben.
         </p>
       </div>
     )
@@ -50,7 +53,7 @@ export const ReturnRequestForm = ({ item }: { item: FoundItem }) => {
       <Field label="Name" required error={errors.name?.message}>
         {(p) => <Input autoComplete="name" {...p} {...form.register('name')} />}
       </Field>
-      <Field label="Kontaktadresse" required hint="E-Mail-Adresse oder Telefonnummer" error={errors.contact?.message}>
+      <Field label="Kontaktadresse" required hint={<ContactHint value={contact} />} error={errors.contact?.message}>
         {(p) => <Input autoComplete="email" {...p} {...form.register('contact')} />}
       </Field>
       <Field

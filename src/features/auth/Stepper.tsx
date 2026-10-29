@@ -2,7 +2,7 @@ import { Check } from 'lucide-react'
 import { cn } from '@/components/ui/cn'
 
 export const Stepper = ({ steps, current }: { steps: string[]; current: number }) => (
-  <ol className="mb-8 grid gap-2 sm:grid-cols-4" aria-label="Fortschritt">
+  <ol className="mb-8 grid gap-2 sm:auto-cols-fr sm:grid-flow-col" aria-label="Fortschritt">
     {steps.map((label, index) => {
       const done = index < current
       const active = index === current
