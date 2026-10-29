@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router'
+import { Link, useSearchParams } from 'react-router'
 import { ChevronRight, Inbox } from 'lucide-react'
 import { formatDateTime } from '@/domain/dates'
 import { REQUEST_STATUS_LABELS } from '@/domain/labels'
@@ -15,7 +15,9 @@ const TABS: (RequestStatus | 'all')[] = ['open', 'confirmed', 'completed', 'reje
 export const RequestsPage = () => {
   const requests = useRequests()
   const items = useStaffItems()
-  const [tab, setTab] = useState<RequestStatus | 'all'>('open')
+  const [params] = useSearchParams()
+  const initialTab = TABS.find((t) => t === params.get('status')) ?? 'open'
+  const [tab, setTab] = useState<RequestStatus | 'all'>(initialTab)
   const itemsById = useMemo(() => new Map((items.data ?? []).map((i) => [i.id, i])), [items.data])
   const list = (requests.data ?? []).filter((r) => tab === 'all' || r.status === tab)
   const count = (s: RequestStatus | 'all') => (requests.data ?? []).filter((r) => s === 'all' || r.status === s).length

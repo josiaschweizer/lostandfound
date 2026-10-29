@@ -101,3 +101,31 @@ export const pickAiMatches = <T extends { id: string }>(
     .sort((a, b) => b.score - a.score)
     .map((m) => ({ entry: byId.get(m.id)!, score: m.score, reason: m.reason }))
 }
+
+/** Höchstens so viele Gegenstände prüft die KI-Suche zusätzlich. */
+export const AI_SEARCH_MAX_CANDIDATES = 40
+
+export interface SearchCandidate {
+  id: string
+  title: string
+  category: ItemCategory
+  color: ItemColor
+  brand: string | null
+  foundOn: string
+  foundLocation: string
+  description: string
+  organisation: string | null
+}
+
+/** Nur öffentliche Angaben plus Name der Fundstelle. */
+export const toSearchCandidate = (i: FoundItem, organisation: string | null): SearchCandidate => ({
+  id: i.id,
+  title: i.title,
+  category: i.category,
+  color: i.color,
+  brand: i.brand,
+  foundOn: i.foundOn,
+  foundLocation: i.foundLocation,
+  description: i.publicDescription,
+  organisation,
+})

@@ -54,7 +54,7 @@ export const LossReportStatusPage = () => {
       <PageHeader eyebrow="Ihre Verlustmeldung" title={r.title} actions={<LossReportStatusBadge status={r.status} />} />
       {params.get('neu') && (
         <Alert tone="success" title="Verlustmeldung erfasst">
-          Speichern Sie diese Seite – über den Link sehen Sie jederzeit neue mögliche Treffer.
+          Sie finden diese Meldung jederzeit unter «Meine Anfragen» oben im Menü (in diesem Browser) oder über den Link in der Bestätigungs-E-Mail.
         </Alert>
       )}
 

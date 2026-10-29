@@ -1,5 +1,5 @@
 /**
- * Merkt sich im Browser die Links zu eigenen Anfragen/Meldungen (nur Komfort für die Demo).
+ * Merkt sich im Browser die Links zu eigenen Anfragen/Meldungen («Meine Anfragen»).
  * Fehler beim Zugriff auf localStorage werden ignoriert.
  */
 export interface SavedLink {
@@ -10,15 +10,35 @@ export interface SavedLink {
 }
 
 const KEY = 'lostandfound:my-links'
+/** Wird nach jeder Änderung ausgelöst, damit die Oberfläche (useSavedLinks) aktualisiert. */
+export const SAVED_LINKS_EVENT = 'lostandfound:links-changed'
 
-export const loadSavedLinks = (): SavedLink[] => {
+const notify = () => {
   try {
-    const raw = localStorage.getItem(KEY)
+    window.dispatchEvent(new Event(SAVED_LINKS_EVENT))
+  } catch {
+    /* ignorieren */
+  }
+}
+
+/** Roher Speicherinhalt – stabiler Wert für useSyncExternalStore. */
+export const readSavedLinksRaw = (): string => {
+  try {
+    return localStorage.getItem(KEY) ?? ''
+  } catch {
+    return ''
+  }
+}
+
+export const parseSavedLinks = (raw: string): SavedLink[] => {
+  try {
     return raw ? (JSON.parse(raw) as SavedLink[]) : []
   } catch {
     return []
   }
 }
+
+export const loadSavedLinks = (): SavedLink[] => parseSavedLinks(readSavedLinksRaw())
 
 export const saveLink = (link: SavedLink): void => {
   try {
@@ -27,6 +47,16 @@ export const saveLink = (link: SavedLink): void => {
   } catch {
     /* Speicher nicht verfügbar – ohne Komfortfunktion weiterarbeiten */
   }
+  notify()
+}
+
+export const removeLink = (token: string): void => {
+  try {
+    localStorage.setItem(KEY, JSON.stringify(loadSavedLinks().filter((l) => l.token !== token)))
+  } catch {
+    /* ignorieren */
+  }
+  notify()
 }
 
 export const clearSavedLinks = (): void => {
@@ -35,6 +65,7 @@ export const clearSavedLinks = (): void => {
   } catch {
     /* ignorieren */
   }
+  notify()
 }
 
 export const linkPath = (link: Pick<SavedLink, 'kind' | 'token'>): string =>

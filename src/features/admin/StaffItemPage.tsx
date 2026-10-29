@@ -19,6 +19,7 @@ import { Button, ButtonLink } from '@/components/ui/Button'
 import { Alert, EmptyState, ErrorState, Spinner } from '@/components/ui/Feedback'
 import { Card, CardSection, DefinitionList, PageHeader } from '@/components/ui/Layout'
 import { useChangeItemStatus, useLossReports, useNotifyMatch, useRequests, useStaffItem } from './queries'
+import { RejectOpenRequests } from './RejectOpenRequests'
 
 const STATUS_ACTION_LABELS: Record<ItemStatus, string> = {
   available: 'Als verfügbar markieren',
@@ -150,31 +151,42 @@ export const StaffItemPage = () => {
 
         <div className="space-y-6">
           <CardSection title="Status">
-            <div className="mb-4">
+            <div className="mb-3">
               <ItemStatusBadge status={data.status} />
             </div>
-            <div className="flex flex-col gap-2">
-              {nextStatuses.map((s) => (
-                <Button
-                  key={s}
-                  variant={s === 'returned' ? 'success' : 'secondary'}
-                  loading={changeStatus.isPending && changeStatus.variables?.status === s}
-                  disabled={changeStatus.isPending}
-                  onClick={() => changeStatus.mutate({ id, status: s })}
-                >
-                  {STATUS_ACTION_LABELS[s]}
-                </Button>
-              ))}
-            </div>
-            {itemRequests.some((r) => r.status === 'confirmed') && (
-              <p className="mt-3 text-xs text-stone-500">«{ITEM_STATUS_LABELS.available}» ist erst möglich, wenn die bestätigte Anfrage abgelehnt wurde.</p>
+            <p className="text-sm text-stone-600">
+              Der Status ändert sich normalerweise über die Anfragen: <strong>Bestätigen</strong> reserviert den Gegenstand, <strong>«Übergabe erfolgt»</strong>{' '}
+              schliesst die Rückgabe ab.
+            </p>
+            {stillOpen.length > 0 && data.status === 'returned' && (
+              <div className="mt-3">
+                <RejectOpenRequests requests={itemRequests} />
+              </div>
+            )}
+            {nextStatuses.length > 0 && (
+              <details className="group mt-4 rounded-lg bg-stone-50 p-3 text-sm">
+                <summary className="cursor-pointer font-medium text-stone-700">Status manuell ändern (Sonderfälle)</summary>
+                <p className="mt-2 text-xs text-stone-500">z. B. wenn ein Gegenstand ohne Anfrage direkt am Schalter abgeholt wurde.</p>
+                <div className="mt-3 flex flex-col gap-2">
+                  {nextStatuses.map((s) => (
+                    <Button
+                      key={s}
+                      size="sm"
+                      variant={s === 'returned' ? 'success' : 'secondary'}
+                      loading={changeStatus.isPending && changeStatus.variables?.status === s}
+                      disabled={changeStatus.isPending}
+                      onClick={() => changeStatus.mutate({ id, status: s })}
+                    >
+                      {STATUS_ACTION_LABELS[s]}
+                    </Button>
+                  ))}
+                </div>
+                {itemRequests.some((r) => r.status === 'confirmed') && (
+                  <p className="mt-3 text-xs text-stone-500">«{ITEM_STATUS_LABELS.available}» ist erst möglich, wenn die bestätigte Anfrage abgelehnt wurde.</p>
+                )}
+              </details>
             )}
             {changeStatus.isError && <Alert tone="error" className="mt-3">{toUserMessage(changeStatus.error)}</Alert>}
-            {stillOpen.length > 0 && (
-              <Alert tone="warning" className="mt-3">
-                {stillOpen.length} offene Anfrage{stillOpen.length > 1 ? 'n' : ''} – bitte bewusst ablehnen.
-              </Alert>
-            )}
           </CardSection>
 
           {(matchingReports.length > 0 || aiCandidates.length > 0) && (

@@ -38,21 +38,9 @@ export const useCatalogFilters = (fixed: Partial<CatalogFilters>) => {
     [setParams],
   )
 
-  /** Ersetzt alle Filter auf einmal (z. B. nach der KI-Suche). */
-  const replaceFilters = useCallback(
-    (next: Partial<CatalogFilters>) => {
-      const params = new URLSearchParams()
-      for (const [key, value] of Object.entries(next) as [keyof CatalogFilters, string][]) {
-        if (value && !(key in fixed)) params.set(PARAM_NAMES[key], value)
-      }
-      setParams(params, { replace: true })
-    },
-    [setParams, fixed],
-  )
-
   const resetFilters = useCallback(() => setParams(new URLSearchParams(), { replace: true }), [setParams])
 
-  return { filters, setFilter, replaceFilters, resetFilters }
+  return { filters, setFilter, resetFilters }
 }
 
 export const searchUrl = (filters: Partial<CatalogFilters>): string => {
@@ -62,4 +50,19 @@ export const searchUrl = (filters: Partial<CatalogFilters>): string => {
   }
   const qs = params.toString()
   return qs ? `/suche?${qs}` : '/suche'
+}
+
+/**
+ * Link zu «Verlust melden» mit den Angaben aus der Suche – so muss niemand alles nochmals eintippen.
+ * Ein «Gefunden ab»-Datum wird als Verlustdatum übernommen.
+ */
+export const lossReportUrl = (filters: Partial<CatalogFilters>): string => {
+  const params = new URLSearchParams()
+  if (filters.query?.trim()) params.set('titel', filters.query.trim())
+  if (filters.category) params.set('kategorie', filters.category)
+  if (filters.color) params.set('farbe', filters.color)
+  if (filters.organisationId) params.set('org', filters.organisationId)
+  if (filters.foundFrom) params.set('datum', filters.foundFrom)
+  const qs = params.toString()
+  return qs ? `/verlust-melden?${qs}` : '/verlust-melden'
 }

@@ -1,7 +1,6 @@
 import { FunctionsHttpError } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
-import type { FoundDescription, LostDescription } from '@/domain/aiMatching'
-import type { CatalogFilters } from '@/domain/catalog'
+import type { FoundDescription, LostDescription, SearchCandidate } from '@/domain/aiMatching'
 import type { ItemCategory, ItemColor, ItemStatus } from '@/domain/types'
 import { AppError, toUserMessage } from './errors'
 
@@ -50,8 +49,6 @@ export interface ChatReply {
 
 export const sendChat = (messages: ChatMessage[]): Promise<ChatReply> => invokeAi<ChatReply>('chat', { messages })
 
-export const parseSearch = async (text: string): Promise<CatalogFilters> =>
-  (await invokeAi<{ filters: CatalogFilters }>('parse-search', { text })).filters
 
 export interface LossReportDraft {
   title: string | null
@@ -127,3 +124,9 @@ export interface PhotoAnalysis {
 /** `image` ist eine Data-URL (JPEG/PNG/WebP), siehe photoToDataUrl. */
 export const analyzePhoto = async (image: string): Promise<PhotoAnalysis> =>
   (await invokeAi<{ analysis: PhotoAnalysis }>('analyze-photo', { image })).analysis
+
+// --- KI-Suche (öffentlich) -----------------------------------------------------
+
+/** Bewertet zusätzliche Kandidaten für eine Suchanfrage; nur Treffer ab Score 50 kommen zurück. */
+export const searchWithAi = async (query: string, items: SearchCandidate[]): Promise<RankedMatch[]> =>
+  (await invokeAi<{ matches: RankedMatch[] }>('search-items', { query, items })).matches

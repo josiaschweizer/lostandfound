@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Link, useNavigate } from 'react-router'
+import { Link, useLocation, useNavigate } from 'react-router'
 import { FlaskConical, RotateCcw, X } from 'lucide-react'
 import { useDock } from '@/app/dock'
 import { useAuth } from '@/app/useAuth'
+import { resolveDemoMode } from '@/lib/demoMode'
 import { clearSavedLinks, linkPath, loadSavedLinks } from '@/lib/localTokens'
 import { signIn, signOut } from '@/services/auth'
 import { DEMO_ACCOUNTS, DEMO_PASSWORD, resetDemo } from '@/services/demo'
@@ -14,7 +15,7 @@ import { cn } from '@/components/ui/cn'
 
 /**
  * Demo-Hilfe (nur für Nutzertests/Präsentation): Rollenwechsel, eigene Links, Reset.
- * Bewusst klar gekennzeichnet – keine Funktion der echten Plattform.
+ * Bewusst klar gekennzeichnet – keine Funktion der echten Plattform. Online nur mit «?demo=1» sichtbar (siehe demoMode.ts).
  */
 export const DemoPanel = () => {
   const { openPanel, setOpenPanel } = useDock()
@@ -58,8 +59,13 @@ export const DemoPanel = () => {
     },
   })
 
+  const { search } = useLocation()
+  const enabled = useMemo(() => resolveDemoMode(search), [search])
+
   const currentEmail = session?.user.email ?? null
   const roles = [{ email: null, label: 'Öffentliche Ansicht', sub: 'Suchende, ohne Anmeldung' }, ...DEMO_ACCOUNTS.map((a) => ({ email: a.email, label: a.organisation, sub: a.name }))]
+
+  if (!enabled) return null
 
   return (
     <div>

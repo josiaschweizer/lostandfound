@@ -2,7 +2,7 @@
 
 ## Präsentation (ca. 3 Minuten)
 
-Vorbereitung: Demo zurücksetzen (Demo-Hilfe → «Demo zurücksetzen»), dann Startseite öffnen.
+Vorbereitung: Online-Version einmal mit `?demo=1` öffnen (blendet die Demo-Hilfe ein), Demo zurücksetzen (Demo-Hilfe → «Demo zurücksetzen»), dann Startseite öffnen.
 
 | Zeit | Schritt | Was zeigen / sagen |
 |---|---|---|

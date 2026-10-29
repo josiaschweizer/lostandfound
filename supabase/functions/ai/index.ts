@@ -4,7 +4,7 @@
  *
  * Aufruf aus dem Frontend: supabase.functions.invoke('ai', { body: { task, ... } })
  *   chat               öffentlich     Assistent mit Zugriff auf den öffentlichen Fundkatalog
- *   parse-search       öffentlich     Suchsatz → Katalogfilter
+ *   search-items       öffentlich     KI-Suche: ergänzt Katalogtreffer um anders formulierte
  *   parse-loss-report  öffentlich     Freitext → Felder der Verlustmeldung
  *   rank-matches       öffentlich     KI-Abgleich Verlustmeldung ↔ Fundgegenstände
  *   describe-item      Mitarbeitende  Vorschlag für die öffentliche Beschreibung
@@ -27,7 +27,7 @@ import {
   cleanLossReport,
   cleanMatches,
   cleanPhotoAnalysis,
-  cleanSearch,
+  cleanSearchHits,
   describeItemMessages,
   draftMessageMessages,
   lossReportMessages,
@@ -37,8 +37,8 @@ import {
   readDraftMessageInput,
   readMatchInput,
   readPhoto,
-  searchMessages,
-  type OrganisationRef,
+  readSearchInput,
+  searchItemsMessages,
 } from './tasks.ts'
 
 const CORS = {
@@ -50,7 +50,7 @@ const CORS = {
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { ...CORS, 'Content-Type': 'application/json' } })
 
-const PUBLIC_TASKS = new Set(['chat', 'parse-search', 'parse-loss-report', 'rank-matches'])
+const PUBLIC_TASKS = new Set(['chat', 'search-items', 'parse-loss-report', 'rank-matches'])
 const STAFF_TASKS = new Set(['describe-item', 'draft-message', 'analyze-photo'])
 
 /** Anfragen pro 5 Minuten: Suchende (pro IP) bzw. angemeldete Mitarbeitende. */
@@ -164,12 +164,11 @@ Deno.serve(async (req) => {
         if (typeof messages === 'string') return json(400, { error: messages })
         return json(200, await runChat(config, catalog, messages, today))
       }
-      case 'parse-search': {
-        const text = cleanText(body.text, 500)
-        if (!text) return json(400, { error: 'Bitte beschreiben, was Sie suchen.' })
-        const organisations: OrganisationRef[] = (await catalog.listOrganisations()).map((o) => ({ id: o.id, name: o.name, address: o.address }))
-        const result = await complete(config, { messages: searchMessages(text, today, organisations), json: true, maxTokens: 300 })
-        return json(200, { filters: cleanSearch(parseJsonObject(result.content), today, organisations) })
+      case 'search-items': {
+        const input = readSearchInput(body)
+        if (typeof input === 'string') return json(400, { error: input })
+        const result = await complete(config, { messages: searchItemsMessages(input, today), json: true, maxTokens: 1200, timeoutMs: 40_000 })
+        return json(200, { matches: cleanSearchHits(parseJsonObject(result.content), input) })
       }
       case 'parse-loss-report': {
         const text = cleanText(body.text, 2000)

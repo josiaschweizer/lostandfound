@@ -98,6 +98,8 @@ export interface LossReport {
 /** Nachricht im Postausgang. Wird zusätzlich echt versendet, wenn der Versand konfiguriert ist. */
 export interface SimulatedEmail {
   id: string
+  returnRequestId: string | null
+  lossReportId: string | null
   recipient: string
   subject: string
   body: string

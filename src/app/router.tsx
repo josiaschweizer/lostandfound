@@ -15,6 +15,7 @@ import { HomePage } from '@/features/public/HomePage'
 import { ItemPage } from '@/features/public/ItemPage'
 import { LossReportPage } from '@/features/public/LossReportPage'
 import { LossReportStatusPage } from '@/features/public/LossReportStatusPage'
+import { MyRequestsPage } from '@/features/public/MyRequestsPage'
 import { NotFoundPage } from '@/features/public/NotFoundPage'
 import { OrganisationPage } from '@/features/public/OrganisationPage'
 import { RequestStatusPage } from '@/features/public/RequestStatusPage'
@@ -38,6 +39,7 @@ export const router = createBrowserRouter([
           { path: '/verlust-melden', element: <LossReportPage /> },
           { path: '/status/anfrage/:token', element: <RequestStatusPage /> },
           { path: '/status/meldung/:token', element: <LossReportStatusPage /> },
+          { path: '/meine-anfragen', element: <MyRequestsPage /> },
           { path: '/anmelden', element: <LoginPage /> },
           { path: '/registrieren', element: <RegisterPage /> },
           { path: '*', element: <NotFoundPage /> },

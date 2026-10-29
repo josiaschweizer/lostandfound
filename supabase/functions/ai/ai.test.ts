@@ -3,7 +3,7 @@ import { readMessages, runChat, searchItems, type CatalogSource, type PublicItem
 import { cleanDate } from './domain.ts'
 import { buildBody, parseJsonObject, readConfig, type CompletionRequest, type CompletionResult, type LlmConfig } from './llm.ts'
 import { createRateLimiter } from './ratelimit.ts'
-import { cleanLossReport, cleanSearch, describeItemMessages, readDescribeItemInput } from './tasks.ts'
+import { cleanLossReport, describeItemMessages, readDescribeItemInput } from './tasks.ts'
 
 const config: LlmConfig = { apiKey: 'k', baseUrl: 'https://api.deepseek.com', model: 'deepseek-flash', visionModel: 'deepseek-flash' }
 
@@ -57,15 +57,6 @@ Deno.test('Verlustmeldung: ungültige Werte der KI werden verworfen', () => {
   assert.equal(draft.color, 'blue')
   assert.equal(draft.lostOn, null)
   assert.equal(draft.lostLocation, 'Bus 3')
-})
-
-Deno.test('Suche: nur bekannte Organisationen, ein Suchwort', () => {
-  const orgs = [{ id: 'o1', name: 'Schule' }]
-  const f = cleanSearch({ query: 'Rucksack schwarz', category: 'bags', organisationId: 'fremd', foundFrom: '2026-10-01' }, '2026-10-29', orgs)
-  assert.equal(f.query, 'Rucksack')
-  assert.equal(f.organisationId, '')
-  assert.equal(f.category, 'bags')
-  assert.equal(f.foundFrom, '2026-10-01')
 })
 
 Deno.test('Beschreibung: Titel ist Pflicht, interne Felder werden nie übernommen', () => {

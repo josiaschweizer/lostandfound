@@ -2,7 +2,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { ClipboardList, ExternalLink, Inbox, LogOut, Mail, Package, PackagePlus, Store } from 'lucide-react'
 import { useStaffContext } from '@/app/useAuth'
-import { useRequests } from '@/features/admin/queries'
+import { useStaffTodo } from '@/features/admin/queries'
 import { signOut } from '@/services/auth'
 import { ButtonLink } from '../ui/Button'
 import { cn } from '../ui/cn'
@@ -16,10 +16,10 @@ const navClass = ({ isActive }: { isActive: boolean }) =>
 
 export const AdminLayout = () => {
   const { organisation, membership } = useStaffContext()
-  const requests = useRequests()
+  const todo = useStaffTodo()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const openCount = (requests.data ?? []).filter((r) => r.status === 'open').length
+  const openCount = todo.openRequests
 
   const logout = async () => {
     await navigate('/')
@@ -57,15 +57,20 @@ export const AdminLayout = () => {
           </NavLink>
           <NavLink to="/verwaltung/meldungen" className={navClass}>
             <ClipboardList className="size-4" aria-hidden /> Verlustmeldungen
-          </NavLink>
-          <NavLink to="/verwaltung/postausgang" className={navClass}>
-            <Mail className="size-4" aria-hidden /> Postausgang
+            {todo.reportsWithMatches > 0 && (
+              <span className="rounded-full bg-brand-600 px-1.5 text-xs text-white" title="Meldungen mit möglichem Treffer">
+                {todo.reportsWithMatches}
+              </span>
+            )}
           </NavLink>
           <NavLink to="/verwaltung/fundstelle" className={navClass}>
             <Store className="size-4" aria-hidden /> Fundstelle
           </NavLink>
           <NavLink to={`/o/${organisation.slug}`} className={navClass}>
             <ExternalLink className="size-4" aria-hidden /> Öffentliche Seite
+          </NavLink>
+          <NavLink to="/verwaltung/postausgang" className={navClass}>
+            <Mail className="size-4" aria-hidden /> Gesendete Nachrichten
           </NavLink>
         </nav>
       </header>

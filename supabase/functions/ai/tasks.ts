@@ -169,57 +169,91 @@ export const cleanLossReport = (raw: Record<string, unknown>, today: string): Lo
 })
 
 // -----------------------------------------------------------------------------
-// Suche in natürlicher Sprache → Katalogfilter (öffentlich)
+// KI-Suche: ergänzt die normale Katalogsuche um Treffer, die anders formuliert sind (öffentlich)
+// Der Browser schickt die Suchanfrage und bis zu 40 öffentliche Kandidaten mit.
 // -----------------------------------------------------------------------------
-export interface OrganisationRef {
+export const MAX_SEARCH_CANDIDATES = 40
+
+export interface SearchCandidate {
   id: string
-  name: string
-  address?: string
+  title: string
+  category: Category
+  color: Color
+  brand: string | null
+  foundOn: string
+  foundLocation: string | null
+  description: string | null
+  organisation: string | null
 }
 
-export interface SearchFilters {
+export interface SearchInput {
   query: string
-  category: Category | ''
-  color: Color | ''
-  organisationId: string
-  foundFrom: string
-  foundTo: string
+  items: SearchCandidate[]
 }
 
-export const searchMessages = (text: string, today: string, organisations: OrganisationRef[]): ChatMessage[] => [
+export const readSearchInput = (body: Record<string, unknown>): SearchInput | string => {
+  const query = cleanText(body.query, 300)
+  if (!query || query.length < 3) return 'Bitte etwas ausführlicher beschreiben, was Sie suchen.'
+  const raw = Array.isArray(body.items) ? body.items.slice(0, MAX_SEARCH_CANDIDATES) : []
+  const items: SearchCandidate[] = []
+  for (const entry of raw) {
+    if (!entry || typeof entry !== 'object') return 'Ungültige Angaben für die Suche.'
+    const r = entry as Record<string, unknown>
+    const id = cleanText(r.id, 64)
+    const title = cleanText(r.title, 120)
+    const foundOn = cleanDate(r.foundOn)
+    if (!id || !title || !foundOn || !isCategory(r.category) || !isColor(r.color)) return 'Ungültige Angaben für die Suche.'
+    items.push({
+      id,
+      title,
+      category: r.category,
+      color: r.color,
+      brand: cleanText(r.brand, 80),
+      foundOn,
+      foundLocation: cleanText(r.foundLocation, 200),
+      description: cleanText(r.description, 300),
+      organisation: cleanText(r.organisation, 120),
+    })
+  }
+  if (items.length === 0) return 'Keine Gegenstände zum Durchsuchen.'
+  return { query, items }
+}
+
+export const searchItemsMessages = (input: SearchInput, today: string): ChatMessage[] => [
   {
     role: 'system',
     content: lines(
-      'Du übersetzt eine Suchanfrage für einen Fundkatalog in Filter. Gib ein JSON-Objekt zurück.',
-      `Heute ist ${today}.`,
-      'Felder (nicht erkennbar → leerer String ""):',
-      '- query: höchstens EIN Suchwort, das wahrscheinlich im Titel steht (z. B. «Rucksack», «AirPods»). Leer lassen, wenn die Kategorie schon reicht oder das Wort ein Oberbegriff ist (z. B. «Handy» → category electronics, query "").',
-      `- category: ${describeEnum(CATEGORIES)}`,
-      `- color: ${describeEnum(COLORS)}`,
-      '- organisationId: id der passenden Organisation aus der Liste, nur wenn der Ort eindeutig dazu passt',
-      '- foundFrom: YYYY-MM-DD. Wenn die Person sagt, wann sie es verloren hat, nimm dieses Datum (Funde liegen danach).',
-      '- foundTo: YYYY-MM-DD, meist leer',
-      'Organisationen:',
-      ...organisations.map((o) => `- id ${o.id}: ${o.name}${o.address ? `, ${o.address}` : ''}`),
-      'Antworte ausschliesslich mit dem JSON-Objekt.',
+      'Du hilfst bei der Suche in einem Fundkatalog. Die normale Wortsuche hat bereits stattgefunden – du findest zusätzliche Gegenstände, die zur Suchanfrage passen, auch wenn andere Wörter verwendet wurden.',
+      `Heute ist ${today}. Die Suchanfrage kann ein Stichwort oder ein ganzer Satz sein (mit Farbe, Ort oder Zeit wie «letzte Woche»).`,
+      'Berücksichtige Bedeutung statt Wortgleichheit (Natel = Smartphone, Geldbeutel = Portemonnaie), Farbe, Ort und Zeit (Funde liegen am oder nach dem Verlusttag).',
+      'Bewerte jeden Kandidaten mit score 0–100, wie gut er zur Suche passt. Unter 50 bedeutet: nicht anzeigen.',
+      'reason: ein kurzer deutscher Satz (max. 90 Zeichen, Schweizer Rechtschreibung), warum er passt.',
+      'Antworte ausschliesslich mit JSON im Format {"matches":[{"key":"K1","score":80,"reason":"…"}]} und nur mit Kandidaten ab score 50.',
     ),
   },
-  { role: 'user', content: text },
+  {
+    role: 'user',
+    content: lines(
+      `SUCHANFRAGE: ${input.query}`,
+      '',
+      'KANDIDATEN:',
+      ...input.items.map((c, i) =>
+        [
+          `K${i + 1}: ${c.title}`,
+          CATEGORIES[c.category],
+          COLORS[c.color],
+          c.brand ? `Marke ${c.brand}` : null,
+          `gefunden am ${c.foundOn}`,
+          c.foundLocation ? `Fundort ${c.foundLocation}` : null,
+          c.organisation ? `Fundstelle ${c.organisation}` : null,
+          c.description,
+        ]
+          .filter(Boolean)
+          .join(' · '),
+      ),
+    ),
+  },
 ]
-
-export const cleanSearch = (raw: Record<string, unknown>, today: string, organisations: OrganisationRef[]): SearchFilters => {
-  const query = (cleanText(raw.query, 40) ?? '').split(' ')[0] ?? ''
-  const foundFrom = cleanDate(raw.foundFrom, today) ?? ''
-  const foundTo = cleanDate(raw.foundTo, today) ?? ''
-  return {
-    query,
-    category: isCategory(raw.category) ? raw.category : '',
-    color: isColor(raw.color) ? raw.color : '',
-    organisationId: organisations.some((o) => o.id === raw.organisationId) ? String(raw.organisationId) : '',
-    foundFrom,
-    foundTo: foundTo && foundFrom && foundTo < foundFrom ? '' : foundTo,
-  }
-}
 
 // -----------------------------------------------------------------------------
 // KI-Abgleich Verlustmeldung ↔ Fundgegenstand (öffentlich und Mitarbeitende)
@@ -295,9 +329,6 @@ const describeEntry = (d: MatchDescription, kind: 'lost' | 'found') =>
     .filter(Boolean)
     .join(' · ')
 
-/** Kandidaten erhalten kurze Schlüssel (K1, K2 …) – so kann die KI keine IDs erfinden. */
-export const matchKeys = (input: MatchInput) => (input.anchor === 'lost' ? input.found : input.lost).map((d, i) => ({ key: `K${i + 1}`, id: d.id }))
-
 export const matchMessages = (input: MatchInput): ChatMessage[] => {
   const anchorKind = input.anchor
   const candidateKind = anchorKind === 'lost' ? 'found' : 'lost'
@@ -334,8 +365,18 @@ export const matchMessages = (input: MatchInput): ChatMessage[] => {
   ]
 }
 
-export const cleanMatches = (raw: Record<string, unknown>, input: MatchInput): RankedMatch[] => {
-  const keys = new Map(matchKeys(input).map((k) => [k.key, k.id]))
+export const cleanMatches = (raw: Record<string, unknown>, input: MatchInput): RankedMatch[] =>
+  cleanRanked(raw, (input.anchor === 'lost' ? input.found : input.lost).map((d) => d.id))
+
+export const cleanSearchHits = (raw: Record<string, unknown>, input: SearchInput): RankedMatch[] =>
+  cleanRanked(raw, input.items.map((i) => i.id))
+
+/**
+ * Kandidaten erhalten kurze Schlüssel (K1, K2 …) – so kann die KI keine IDs erfinden.
+ * Ordnet die Antworten den IDs zu, verwirft Unbekanntes und Doppeltes.
+ */
+const cleanRanked = (raw: Record<string, unknown>, ids: string[]): RankedMatch[] => {
+  const keys = new Map(ids.map((id, i) => [`K${i + 1}`, id]))
   const list = Array.isArray(raw.matches) ? raw.matches : []
   const seen = new Set<string>()
   const result: RankedMatch[] = []

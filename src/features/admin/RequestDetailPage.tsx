@@ -14,7 +14,9 @@ import { Button } from '@/components/ui/Button'
 import { Alert, EmptyState, ErrorState, Spinner } from '@/components/ui/Feedback'
 import { Field, Textarea } from '@/components/ui/Form'
 import { CardSection, DefinitionList, PageHeader } from '@/components/ui/Layout'
-import { useChangeItemStatus, useDecideRequest, useRequests, useStaffItem } from './queries'
+import { SimulatedEmailCard } from '@/components/items/SimulatedEmailCard'
+import { useChangeItemStatus, useDecideRequest, useOutbox, useRequests, useStaffItem } from './queries'
+import { RejectOpenRequests } from './RejectOpenRequests'
 
 type Mode = 'idle' | 'confirm' | 'reject'
 
@@ -27,6 +29,7 @@ export const RequestDetailPage = () => {
   const item = useStaffItem(request?.itemId ?? '')
   const decide = useDecideRequest()
   const changeStatus = useChangeItemStatus()
+  const outbox = useOutbox()
   const [mode, setMode] = useState<Mode>('idle')
   const [pickup, setPickup] = useState(organisation.office.pickupNotes ?? '')
   const [note, setNote] = useState('')
@@ -40,6 +43,7 @@ export const RequestDetailPage = () => {
   const openOthers = others.filter((r) => r.status === 'open' || r.status === 'confirmed')
   const canConfirm = canConfirmRequest(request, item.data.status, others)
   const canReject = canRejectRequest(request)
+  const messages = (outbox.data ?? []).filter((m) => m.returnRequestId === request.id)
 
   /** KI formuliert aus den Stichworten einen Text. Name, Kontakt und internes Erkennungsmerkmal werden nicht mitgeschickt. */
   const draftText = async (kind: 'confirm' | 'reject') => {
@@ -84,7 +88,7 @@ export const RequestDetailPage = () => {
       <BackLink to="/verwaltung/anfragen" label="Zu den Anfragen" />
       <PageHeader eyebrow="Rückgabeanfrage" title={request.claimantName} actions={<RequestStatusBadge status={request.status} />} />
 
-      {openOthers.length > 0 && (
+      {openOthers.length > 0 && request.status !== 'completed' && (
         <Alert tone="warning" title={`${openOthers.length} weitere Anfrage${openOthers.length > 1 ? 'n' : ''} für diesen Gegenstand`}>
           Vergleichen Sie die Eigentumsnachweise, bevor Sie bestätigen.{' '}
           {openOthers.map((o, i) => (
@@ -156,7 +160,12 @@ export const RequestDetailPage = () => {
             </div>
           </div>
         )}
-        {request.status === 'completed' && <Alert tone="success" title="Abgeschlossen">Der Gegenstand wurde dieser Person übergeben.</Alert>}
+        {request.status === 'completed' && (
+          <div className="space-y-3">
+            <Alert tone="success" title="Abgeschlossen">Der Gegenstand wurde dieser Person übergeben.</Alert>
+            <RejectOpenRequests requests={others} />
+          </div>
+        )}
         {request.status === 'rejected' && (
           <Alert tone="info" title="Abgelehnt">
             {request.decisionNote ?? 'Ohne Begründung.'}
@@ -217,6 +226,16 @@ export const RequestDetailPage = () => {
         {decide.isError && <Alert tone="error" className="mt-3">{toUserMessage(decide.error)}</Alert>}
         {changeStatus.isError && <Alert tone="error" className="mt-3">{toUserMessage(changeStatus.error)}</Alert>}
       </CardSection>
+
+      {messages.length > 0 && (
+        <CardSection title="Nachrichten an diese Person" description="Bestätigung und Entscheid, wie sie per E-Mail versendet wurden.">
+          <div className="space-y-3">
+            {messages.map((email) => (
+              <SimulatedEmailCard key={email.id} email={email} />
+            ))}
+          </div>
+        </CardSection>
+      )}
     </div>
   )
 }

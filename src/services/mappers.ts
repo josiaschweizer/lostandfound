@@ -99,6 +99,8 @@ export const toLossReport = (row: Row<'loss_reports'>): LossReport => ({
 
 export const toEmail = (row: Row<'simulated_emails'>): SimulatedEmail => ({
   id: row.id,
+  returnRequestId: row.return_request_id,
+  lossReportId: row.loss_report_id,
   recipient: row.recipient,
   subject: row.subject,
   body: row.body,

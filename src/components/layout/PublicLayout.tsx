@@ -2,17 +2,19 @@ import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router'
 import { Menu, X } from 'lucide-react'
 import { useAuth } from '@/app/useAuth'
+import { useSavedLinks } from '@/app/useSavedLinks'
 import { AssistantWidget } from '@/features/assistant/AssistantWidget'
 import { ButtonLink } from '../ui/Button'
 import { cn } from '../ui/cn'
 import { Logo } from './Logo'
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
-  cn('rounded-lg px-3 py-2 text-sm font-medium transition', isActive ? 'bg-stone-100 text-stone-900' : 'text-stone-600 hover:text-stone-900')
+  cn('rounded-lg px-3 py-2 text-sm font-medium whitespace-nowrap transition', isActive ? 'bg-stone-100 text-stone-900' : 'text-stone-600 hover:text-stone-900')
 
 export const PublicLayout = () => {
   const { membership } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
+  const savedLinks = useSavedLinks()
   const links = (
     <>
       <NavLink to="/suche" className={navClass} onClick={() => setMenuOpen(false)}>
@@ -21,6 +23,11 @@ export const PublicLayout = () => {
       <NavLink to="/verlust-melden" className={navClass} onClick={() => setMenuOpen(false)}>
         Verlust melden
       </NavLink>
+      {savedLinks.length > 0 && (
+        <NavLink to="/meine-anfragen" className={navClass} onClick={() => setMenuOpen(false)}>
+          Meine Anfragen <span className="ml-1 rounded-full bg-brand-600 px-1.5 text-xs text-white">{savedLinks.length}</span>
+        </NavLink>
+      )}
     </>
   )
   const orgActions = membership ? (
@@ -43,16 +50,16 @@ export const PublicLayout = () => {
       <header className="sticky top-0 z-40 border-b border-stone-200 bg-white/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4">
           <Logo />
-          <nav className="hidden items-center gap-1 md:flex" aria-label="Hauptnavigation">
+          <nav className="hidden items-center gap-1 lg:flex" aria-label="Hauptnavigation">
             {links}
           </nav>
-          <div className="hidden items-center gap-2 md:flex">{orgActions}</div>
-          <button type="button" className="rounded-lg p-2 md:hidden" aria-expanded={menuOpen} aria-label="Menü" onClick={() => setMenuOpen((o) => !o)}>
+          <div className="hidden items-center gap-2 lg:flex">{orgActions}</div>
+          <button type="button" className="rounded-lg p-2 lg:hidden" aria-expanded={menuOpen} aria-label="Menü" onClick={() => setMenuOpen((o) => !o)}>
             {menuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
           </button>
         </div>
         {menuOpen && (
-          <div className="flex flex-col gap-1 border-t border-stone-200 px-4 py-3 md:hidden">
+          <div className="flex flex-col gap-1 border-t border-stone-200 px-4 py-3 lg:hidden">
             <nav className="flex flex-col gap-1" aria-label="Hauptnavigation mobil">
               {links}
             </nav>

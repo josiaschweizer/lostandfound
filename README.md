@@ -52,7 +52,7 @@ pnpm dev                       # http://localhost:5173
 
 ## 2. Demo-Zugänge und Rollenwechsel
 
-Unten rechts auf jeder Seite gibt es den Knopf **«Demo-Hilfe»**. Damit:
+Unten rechts gibt es den Knopf **«Demo-Hilfe»** – lokal (`pnpm dev`) immer, auf der Online-Version erst nach einmaligem Aufruf mit `?demo=1` (z. B. `https://…/?demo=1`; `?demo=0` blendet sie wieder aus). Damit:
 
 - **Rolle wechseln:** «Öffentliche Ansicht» (Suchende) oder eine der drei Beispiel-Organisationen, mit einem Klick
 - **Eigene Links öffnen:** Anfragen und Verlustmeldungen, die in diesem Browser gesendet wurden
@@ -136,7 +136,7 @@ Ohne Key funktioniert alles wie bisher, die KI-Knöpfe melden dann «Die KI ist 
 | Funktion | Wo | Wer |
 |---|---|---|
 | Fund-Assistent (Chat, findet echte Funde per Tool Calling) | Schaltfläche «Fragen?» unten rechts | alle |
-| «Mit KI suchen»: Satz → Filter | Suche | alle |
+| KI-Schalter im Suchfeld: ergänzt die normalen Treffer um anders beschriebene Gegenstände (mit Einschätzung und Begründung) | Suche, Seite einer Fundstelle | alle |
 | «Formular ausfüllen»: Freitext → Felder | Verlust melden | alle |
 | «Beschreibung vorschlagen» | Fundgegenstand erfassen/bearbeiten | Mitarbeitende |
 | «Text formulieren»: Abholhinweise / Ablehnung | Anfrage bestätigen/ablehnen | Mitarbeitende |
