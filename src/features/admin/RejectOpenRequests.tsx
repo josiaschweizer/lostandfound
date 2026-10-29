@@ -7,10 +7,6 @@ import { Alert } from '@/components/ui/Feedback'
 import { Textarea } from '@/components/ui/Form'
 import { ALREADY_RETURNED_NOTE, useRejectRequests } from './queries'
 
-/**
- * Nach der Übergabe: übrige offene Anfragen zum selben Gegenstand mit einem Klick ablehnen.
- * Der vorgeschlagene Text kann angepasst werden; jede Person erhält eine Nachricht.
- */
 export const RejectOpenRequests = ({ requests }: { requests: ReturnRequest[] }) => {
   const reject = useRejectRequests()
   const [note, setNote] = useState(ALREADY_RETURNED_NOTE)

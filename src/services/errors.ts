@@ -1,5 +1,3 @@
-/** Übersetzt technische Fehler in verständliche Meldungen auf Deutsch. */
-
 const KNOWN_MESSAGES: [RegExp, string][] = [
   [/invalid login credentials/i, 'E-Mail-Adresse oder Passwort ist falsch.'],
   [/user already registered/i, 'Für diese E-Mail-Adresse gibt es bereits ein Konto. Bitte anmelden.'],
@@ -37,7 +35,6 @@ export const toUserMessage = (error: unknown): string => {
 type SupabaseResult = { data?: unknown; error: { message: string } | null }
 type DataOf<R> = R extends { error: null; data: infer D } ? D : never
 
-/** Wirft einen AppError, wenn ein Supabase-Ergebnis einen Fehler enthält, sonst die Daten. */
 export const unwrap = <R extends SupabaseResult>(result: R): DataOf<R> => {
   ensureOk(result)
   return result.data as DataOf<R>

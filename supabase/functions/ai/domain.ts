@@ -47,7 +47,6 @@ export const cleanDate = (v: unknown, maxDate?: string): string | null => {
   return v
 }
 
-/** Getrimmter Text mit Maximallänge, leer → null. */
 export const cleanText = (v: unknown, max: number): string | null => {
   if (typeof v !== 'string') return null
   const t = v.trim().replace(/\s+/g, ' ')

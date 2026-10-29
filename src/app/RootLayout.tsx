@@ -3,10 +3,6 @@ import { Outlet, useLocation } from 'react-router'
 import { DemoPanel } from '@/features/demo/DemoPanel'
 import { DockContext, type DockPanel } from './dock'
 
-/**
- * Gemeinsame Hülle aller Seiten: Scroll-Reset und schwebende Ecke unten rechts.
- * Dort stapeln sich der Fund-Assistent (nur öffentliche Seiten) und die Demo-Hilfe.
- */
 export const RootLayout = () => {
   const { pathname } = useLocation()
   const [slot, setSlot] = useState<HTMLElement | null>(null)

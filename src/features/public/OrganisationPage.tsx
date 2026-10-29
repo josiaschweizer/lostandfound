@@ -7,7 +7,6 @@ import { Badge, Card } from '@/components/ui/Layout'
 import { CatalogBrowser } from './CatalogBrowser'
 import { useOrganisation } from './queries'
 
-/** Öffentliche Fundstellen-Seite einer Organisation mit eigenem Fundkatalog. */
 export const OrganisationPage = () => {
   const { slug = '' } = useParams()
   const { data: org, isPending, isError, error } = useOrganisation(slug)

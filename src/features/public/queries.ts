@@ -8,7 +8,6 @@ import { getRequestStatus } from '@/services/requests'
 
 export const useOrganisations = () => useQuery({ queryKey: queryKeys.organisations, queryFn: listOrganisations })
 
-/** Organisationen nach ID – für Namen auf Ergebniskarten. */
 export const useOrganisationLookup = () => {
   const { data } = useOrganisations()
   return useMemo(() => new Map((data ?? []).map((o) => [o.id, o])), [data])

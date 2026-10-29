@@ -34,7 +34,7 @@ export interface CatalogSource {
   listOrganisations: () => Promise<PublicOrganisation[]>
 }
 
-export interface ChatItem {
+interface ChatItem {
   id: string
   itemNumber: string
   title: string
@@ -47,12 +47,12 @@ export interface ChatItem {
   status: string
 }
 
-export interface ChatResult {
+interface ChatResult {
   reply: string
   items: ChatItem[]
 }
 
-export interface IncomingMessage {
+interface IncomingMessage {
   role: 'user' | 'assistant'
   content: string
 }
@@ -76,7 +76,7 @@ export const readMessages = (value: unknown): IncomingMessage[] | string => {
   return messages
 }
 
-export const chatSystemPrompt = (today: string) =>
+const chatSystemPrompt = (today: string) =>
   [
     'Du bist der Assistent von «lostandfound», einer Plattform, auf der Schulen, Fundbüros und Firmen gefundene Gegenstände veröffentlichen.',
     'Du hilfst Personen, ihren verlorenen Gegenstand zu finden und erklärst die nächsten Schritte.',
@@ -101,7 +101,7 @@ export const chatSystemPrompt = (today: string) =>
     '- Bei Fragen ohne Bezug zu Fundsachen antworte kurz, dass du nur dabei hilfst.',
   ].join('\n')
 
-export const CHAT_TOOLS: ToolDefinition[] = [
+const CHAT_TOOLS: ToolDefinition[] = [
   {
     type: 'function',
     function: {

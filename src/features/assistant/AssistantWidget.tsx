@@ -66,7 +66,6 @@ export const AssistantWidget = () => {
     toggleRef.current?.focus()
   }
 
-  // Esc schliesst den Assistenten.
   useEffect(() => {
     if (!open) return
     const onKey = (e: globalThis.KeyboardEvent) => {

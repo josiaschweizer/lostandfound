@@ -7,7 +7,6 @@ import { ButtonLink } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/Feedback'
 import { Card, PageHeader } from '@/components/ui/Layout'
 
-/** Rückgabeanfragen und Verlustmeldungen, die in diesem Browser gesendet wurden – ohne Konto. */
 export const MyRequestsPage = () => {
   const links = useSavedLinks()
   return (

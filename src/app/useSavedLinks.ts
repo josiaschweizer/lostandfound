@@ -10,7 +10,6 @@ const subscribe = (onChange: () => void) => {
   }
 }
 
-/** In diesem Browser gespeicherte Anfragen und Meldungen – aktualisiert sich automatisch. */
 export const useSavedLinks = (): SavedLink[] => {
   const raw = useSyncExternalStore(subscribe, readSavedLinksRaw, () => '')
   return useMemo(() => parseSavedLinks(raw), [raw])

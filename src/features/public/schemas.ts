@@ -5,7 +5,7 @@ import type { ItemCategory, ItemColor } from '@/domain/types'
 
 const required = (message: string) => z.string().trim().min(1, message)
 
-export const contactSchema = required('Bitte eine Kontaktadresse angeben.').refine(
+const contactSchema = required('Bitte eine Kontaktadresse angeben.').refine(
   (v) => /^\S+@\S+\.\S+$/.test(v) || /^[+\d][\d\s/-]{6,}$/.test(v),
   'Bitte eine gültige E-Mail-Adresse oder Telefonnummer angeben.',
 )

@@ -30,7 +30,7 @@ export const getMembership = async (userId: string): Promise<StaffMember | null>
   return row ? { userId: row.user_id, organisationId: row.organisation_id, fullName: row.full_name } : null
 }
 
-export interface OrganisationRegistration {
+interface OrganisationRegistration {
   fullName: string
   organisationName: string
   organisationType: OrganisationType

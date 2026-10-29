@@ -15,7 +15,6 @@ interface FieldProps {
   children: (props: { id: string; 'aria-invalid': boolean; 'aria-describedby'?: string }) => ReactNode
 }
 
-/** Beschriftetes Formularfeld mit Pflicht-Markierung, Hinweis und Fehlermeldung. */
 export const Field = ({ label, required, hint, error, className, children }: FieldProps) => {
   const id = useId()
   const hintId = hint ? `${id}-hint` : undefined

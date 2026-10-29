@@ -52,10 +52,7 @@ export const searchUrl = (filters: Partial<CatalogFilters>): string => {
   return qs ? `/suche?${qs}` : '/suche'
 }
 
-/**
- * Link zu «Verlust melden» mit den Angaben aus der Suche – so muss niemand alles nochmals eintippen.
- * Ein «Gefunden ab»-Datum wird als Verlustdatum übernommen.
- */
+/** «Gefunden ab» wird als Verlustdatum übernommen. */
 export const lossReportUrl = (filters: Partial<CatalogFilters>): string => {
   const params = new URLSearchParams()
   if (filters.query?.trim()) params.set('titel', filters.query.trim())

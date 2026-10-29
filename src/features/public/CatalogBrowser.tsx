@@ -29,7 +29,6 @@ const FilterLabel = ({ htmlFor, children }: { htmlFor: string; children: string 
   </label>
 )
 
-/** Suchfeld, Filter und Ergebnisliste – global oder für eine Organisation. */
 export const CatalogBrowser = ({ organisationId }: CatalogBrowserProps) => {
   const fixed = useMemo(() => (organisationId ? { organisationId } : {}), [organisationId])
   const { filters, setFilter, resetFilters } = useCatalogFilters(fixed)
@@ -47,8 +46,7 @@ export const CatalogBrowser = ({ organisationId }: CatalogBrowserProps) => {
   )
   const active = hasActiveFilters(filters, organisationId ? ['organisationId'] : [])
 
-  // KI-Suche: ergänzt die Treffer um Gegenstände, die anders beschrieben sind.
-  // Sparsam: erst nach einer Tipppause, nur ab 3 Zeichen, Ergebnisse werden pro Suche zwischengespeichert.
+  // Sparsam mit KI-Anfragen: erst nach einer Tipppause, ab 3 Zeichen, pro Suche zwischengespeichert.
   const [aiEnabled, setAiEnabled] = useState(readAiPreference)
   const toggleAi = () => {
     setAiEnabled((on) => {

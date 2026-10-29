@@ -13,7 +13,6 @@ const initials = (name: string) =>
     .map((w) => w[0])
     .join('')
 
-/** Öffentliche Ergebniskarte: Bild, Titel, Funddatum, Organisation. */
 export const ItemCard = ({ item, organisationName, to }: { item: FoundItem; organisationName?: string; to: string }) => (
   <Link
     to={to}

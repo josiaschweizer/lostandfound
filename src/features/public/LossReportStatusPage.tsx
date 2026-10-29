@@ -32,7 +32,6 @@ export const LossReportStatusPage = () => {
     [report.data, catalog.data],
   )
 
-  // KI-Abgleich: alle Funde aus dem Zeitraum, auch mit anderer Kategorie oder Wortwahl.
   const aiCandidates = useMemo(
     () => (report.data && catalog.data ? itemCandidatesForReport(report.data, catalog.data) : []),
     [report.data, catalog.data],

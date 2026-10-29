@@ -38,7 +38,6 @@ export const useOutbox = () => {
   return useQuery({ queryKey: queryKeys.outbox(orgId), queryFn: () => listOutbox(orgId) })
 }
 
-/** Nach Änderungen: Verwaltung und öffentlichen Katalog neu laden. */
 const useInvalidateAll = () => {
   const queryClient = useQueryClient()
   const orgId = useOrgId()
@@ -96,11 +95,9 @@ export const useUpdateOffice = () => {
   })
 }
 
-/** Standardtext, wenn Anfragen abgelehnt werden, weil der Gegenstand bereits übergeben wurde. */
 export const ALREADY_RETURNED_NOTE =
   'Der Gegenstand wurde inzwischen nach Prüfung der Eigentumsnachweise einer anderen Person übergeben. Falls Sie etwas anderes verloren haben, melden Sie den Verlust gerne auf der Plattform.'
 
-/** Lehnt mehrere Anfragen nacheinander ab (z. B. alle übrigen nach einer Übergabe). */
 export const useRejectRequests = () => {
   const invalidate = useInvalidateAll()
   return useMutation({
@@ -112,10 +109,7 @@ export const useRejectRequests = () => {
   })
 }
 
-/**
- * Was die Fundstelle jetzt erledigen sollte – für die Startseite der Verwaltung und die Navigation.
- * Treffer nach fester Regel, nur öffentliche Gegenstände (wie in der Liste der Verlustmeldungen).
- */
+/** Treffer nach fester Regel und nur mit öffentlichen Gegenständen – wie in der Liste der Verlustmeldungen. */
 export const useStaffTodo = () => {
   const requests = useRequests()
   const items = useStaffItems()

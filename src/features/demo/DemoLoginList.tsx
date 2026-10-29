@@ -6,7 +6,6 @@ import { toUserMessage } from '@/services/errors'
 import { Button } from '@/components/ui/Button'
 import { Alert } from '@/components/ui/Feedback'
 
-/** Demo-Hilfe: Anmeldung als Mitarbeitende einer Beispiel-Organisation. */
 export const DemoLoginList = ({ onDone }: { onDone?: () => void }) => {
   const mutation = useMutation({ mutationFn: (email: string) => signIn(email, DEMO_PASSWORD), onSuccess: onDone })
   return (

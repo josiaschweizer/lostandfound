@@ -27,7 +27,6 @@ const STATUS_ACTION_LABELS: Record<ItemStatus, string> = {
   returned: 'Als zurückgegeben markieren',
 }
 
-/** Interne Detailansicht eines Gegenstands. */
 export const StaffItemPage = () => {
   const { id = '' } = useParams()
   const location = useLocation()
@@ -45,7 +44,6 @@ export const StaffItemPage = () => {
     return (lossReports.data ?? []).filter((r) => r.status === 'open' && findMatches(r, [current]).length > 0)
   }, [item.data, lossReports.data])
 
-  // KI-Abgleich: auch Meldungen mit anderer Kategorie oder Wortwahl (gleiches Zeitfenster, offene Meldungen).
   const aiCandidates = useMemo(
     () => (item.data?.isPublic ? reportCandidatesForItem(item.data, lossReports.data ?? []) : []),
     [item.data, lossReports.data],

@@ -3,7 +3,6 @@ import { Navigate, useLocation } from 'react-router'
 import { Spinner } from '@/components/ui/Feedback'
 import { useAuth } from './useAuth'
 
-/** Schützt die Verwaltung: nur angemeldete Konten mit Organisation. */
 export const RequireStaff = ({ children }: { children: ReactNode }) => {
   const { initializing, session, membership, organisation, membershipLoading } = useAuth()
   const location = useLocation()

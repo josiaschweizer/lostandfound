@@ -55,13 +55,13 @@ const SYNONYM_GROUPS: string[][] = [
  * Das Suchwort selbst plus Synonyme (auch bei Mehrzahl: «handys» → Handy-Gruppe).
  * Sehr kurze Synonyme (z. B. «uhr») werden nicht ergänzt, weil sie in vielen Wörtern vorkommen.
  */
-export const expandTerm = (term: string): string[] => {
+const expandTerm = (term: string): string[] => {
   const group = SYNONYM_GROUPS.find((words) => words.some((w) => term === w || (w.length >= 5 && term.startsWith(w))))
   return group ? [term, ...group.filter((w) => w !== term && w.length >= 4)] : [term]
 }
 
 /** Durchsucht nur öffentliche Angaben. Interne Merkmale sind hier nie vorhanden. */
-export const matchesQuery = (item: FoundItem, query: string, extraText: string[] = []): boolean => {
+const matchesQuery = (item: FoundItem, query: string, extraText: string[] = []): boolean => {
   const terms = normalize(query).split(/\s+/).filter(Boolean)
   if (terms.length === 0) return true
   const haystack = normalize(

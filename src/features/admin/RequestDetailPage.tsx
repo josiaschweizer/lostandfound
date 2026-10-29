@@ -20,7 +20,6 @@ import { RejectOpenRequests } from './RejectOpenRequests'
 
 type Mode = 'idle' | 'confirm' | 'reject'
 
-/** Anfrage prüfen: Eigentumsnachweis neben internem Merkmal, dann bestätigen oder ablehnen. */
 export const RequestDetailPage = () => {
   const { id = '' } = useParams()
   const { organisation } = useStaffContext()

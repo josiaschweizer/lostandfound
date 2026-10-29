@@ -1,4 +1,4 @@
-import type { ItemStatus, RequestStatus, ReturnRequest } from './types'
+import type { ItemStatus, ReturnRequest } from './types'
 
 /**
  * Regeln für Status und Anfragen. Die Datenbank (RPC-Funktionen) erzwingt
@@ -15,9 +15,6 @@ export const canConfirmRequest = (
 export const canRejectRequest = (request: Pick<ReturnRequest, 'status'>): boolean =>
   request.status === 'open' || request.status === 'confirmed'
 
-export const isRequestClosed = (status: RequestStatus): boolean => status === 'rejected' || status === 'completed'
-
-/** Welche Status sind für einen Gegenstand von hier aus wählbar? */
 export const allowedItemStatuses = (
   current: ItemStatus,
   requests: readonly Pick<ReturnRequest, 'status'>[],

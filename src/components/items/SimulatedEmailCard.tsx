@@ -12,7 +12,6 @@ const DELIVERY: Record<EmailDeliveryStatus, { label: string; tone: 'green' | 'am
   skipped: { label: 'Nur simuliert – nicht versendet', tone: 'neutral', icon: MailX, box: 'border-dashed border-accent-600/40 bg-accent-50/60' },
 }
 
-/** Nachricht aus dem Postausgang mit Versandstatus. */
 export const SimulatedEmailCard = ({ email }: { email: SimulatedEmail }) => {
   const d = DELIVERY[email.deliveryStatus]
   const Icon = d.icon

@@ -36,7 +36,7 @@ export const toOffice = (row: Row<'found_offices'>): FoundOffice => ({
   pickupNotes: row.pickup_notes,
 })
 
-export type PublicItemRow = Omit<Row<'found_items'>, 'updated_at'>
+type PublicItemRow = Omit<Row<'found_items'>, 'updated_at'>
 
 export const toFoundItem = (row: PublicItemRow): FoundItem => ({
   id: row.id,
@@ -55,7 +55,7 @@ export const toFoundItem = (row: PublicItemRow): FoundItem => ({
   createdAt: row.created_at,
 })
 
-export const EMPTY_INTERNAL: InternalItemDetails = { identifyingFeature: '', internalNote: '', storageLocation: '' }
+const EMPTY_INTERNAL: InternalItemDetails = { identifyingFeature: '', internalNote: '', storageLocation: '' }
 
 export const toInternal = (row: Row<'found_item_internal'> | null | undefined): InternalItemDetails =>
   row

@@ -18,7 +18,6 @@ import { Stepper } from './Stepper'
 
 const STEPS = ['Konto erstellen', 'Organisation & Fundstelle', 'Fertig']
 
-/** Registrierungsablauf: Konto → Organisation mit Fundstelle → Verwaltung. */
 export const RegisterPage = () => {
   const { session, membership, organisation, membershipLoading, initializing } = useAuth()
   const [createdSlug, setCreatedSlug] = useState<string | null>(null)

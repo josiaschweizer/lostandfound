@@ -3,7 +3,7 @@ import { MATCH_WINDOW_DAYS, scoreMatch, type MatchCriteria } from './matching'
 import type { FoundItem, ItemCategory, ItemColor, LossReport } from './types'
 
 /** Alles, was für den Abgleich nötig ist – passt auf LossReport und auf die öffentliche Statusansicht. */
-export type ReportLike = MatchCriteria & { id: string; lostLocation: string }
+type ReportLike = MatchCriteria & { id: string; lostLocation: string }
 
 /**
  * Vorbereitung für den KI-Abgleich: Kandidaten auswählen und nur die nötigen Angaben weitergeben.
@@ -12,9 +12,9 @@ export type ReportLike = MatchCriteria & { id: string; lostLocation: string }
  */
 
 /** Ab dieser KI-Einschätzung (0–100) wird ein Treffer angezeigt. */
-export const AI_MATCH_THRESHOLD = 50
-/** Höchstens so viele Kandidaten pro Abgleich (Kosten und Antwortzeit). */
-export const AI_MAX_CANDIDATES = 20
+const AI_MATCH_THRESHOLD = 50
+/** Begrenzt Kosten und Antwortzeit. */
+const AI_MAX_CANDIDATES = 20
 
 export interface LostDescription {
   id: string
@@ -50,7 +50,6 @@ export const toLostDescription = (r: ReportLike): LostDescription => ({
   description: r.description,
 })
 
-/** Nur öffentliche Angaben – interne Merkmale gibt es auf FoundItem gar nicht. */
 export const toFoundDescription = (i: FoundItem): FoundDescription => ({
   id: i.id,
   title: i.title,
@@ -89,7 +88,6 @@ export const reportCandidatesForItem = (item: FoundItem, reports: readonly LossR
         .sort((a, b) => rank(b, item) - rank(a, item))
         .slice(0, AI_MAX_CANDIDATES)
 
-/** Ordnet die KI-Bewertungen den Einträgen zu, filtert schwache Treffer und sortiert nach Einschätzung. */
 export const pickAiMatches = <T extends { id: string }>(
   entries: readonly T[],
   ranked: readonly { id: string; score: number; reason: string }[] | undefined,
@@ -102,7 +100,6 @@ export const pickAiMatches = <T extends { id: string }>(
     .map((m) => ({ entry: byId.get(m.id)!, score: m.score, reason: m.reason }))
 }
 
-/** Höchstens so viele Gegenstände prüft die KI-Suche zusätzlich. */
 export const AI_SEARCH_MAX_CANDIDATES = 40
 
 export interface SearchCandidate {
@@ -117,7 +114,6 @@ export interface SearchCandidate {
   organisation: string | null
 }
 
-/** Nur öffentliche Angaben plus Name der Fundstelle. */
 export const toSearchCandidate = (i: FoundItem, organisation: string | null): SearchCandidate => ({
   id: i.id,
   title: i.title,

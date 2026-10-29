@@ -68,7 +68,6 @@ export const LossReportPage = () => {
   const { errors } = form.formState
   const [freeText, setFreeText] = useState('')
 
-  // Schon beim Ausfüllen zeigen, ob der Gegenstand vielleicht bereits abgegeben wurde.
   const catalog = useCatalog()
   const lookup = useOrganisationLookup()
   const [organisationId, title, category, color, brand, lostOn, description, contact] = useWatch({

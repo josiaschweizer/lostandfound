@@ -9,8 +9,8 @@ import type { FoundItem, ItemCategory, ItemColor } from './types'
  * Treffer sind nur Vorschläge – es wird nichts automatisch reserviert.
  */
 export const MATCH_WINDOW_DAYS = 30
-export const COLOR_SCORE = 2
-export const KEYWORD_SCORE = 1
+const COLOR_SCORE = 2
+const KEYWORD_SCORE = 1
 
 export interface MatchCriteria {
   organisationId: string | null
@@ -22,7 +22,7 @@ export interface MatchCriteria {
   description: string
 }
 
-export interface MatchResult<T extends FoundItem = FoundItem> {
+interface MatchResult<T extends FoundItem = FoundItem> {
   item: T
   score: number
   colorMatches: boolean
@@ -47,7 +47,7 @@ export const extractKeywords = (...texts: (string | null | undefined)[]): Set<st
   return new Set(words)
 }
 
-export const isCandidate = (criteria: MatchCriteria, item: FoundItem): boolean => {
+const isCandidate = (criteria: MatchCriteria, item: FoundItem): boolean => {
   if (item.status === 'returned') return false
   if (criteria.organisationId && item.organisationId !== criteria.organisationId) return false
   if (item.category !== criteria.category) return false

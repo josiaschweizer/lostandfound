@@ -35,7 +35,6 @@ export interface OrganisationWithOffice extends Organisation {
   office: FoundOffice
 }
 
-/** Öffentliche Angaben eines Fundgegenstands. */
 export interface FoundItem {
   id: string
   organisationId: string

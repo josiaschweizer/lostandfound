@@ -39,7 +39,6 @@ const toDefaults = (item?: StaffItem): FormValues => ({
   storageLocation: item?.internal.storageLocation ?? '',
 })
 
-/** Formular zum Erfassen und Bearbeiten. Öffentliche und interne Angaben sind klar getrennt. */
 export const ItemForm = ({ item, submitLabel, onSubmit, onCancel }: ItemFormProps) => {
   const { organisation } = useStaffContext()
   const [photoPath, setPhotoPath] = useState<string | null>(item?.photoPath ?? null)
@@ -59,7 +58,6 @@ export const ItemForm = ({ item, submitLabel, onSubmit, onCancel }: ItemFormProp
   useEffect(() => () => { if (localPreview) URL.revokeObjectURL(localPreview) }, [localPreview])
   const previewUrl = localPreview ?? photoUrl(photoPath)
 
-  /** Foto auswerten: füllt nur leere Felder aus und warnt vor sichtbaren persönlichen Angaben. */
   const recognisePhoto = async () => {
     setPhotoAi({ loading: true, error: null, filled: null, warnings: [] })
     try {

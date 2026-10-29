@@ -10,7 +10,6 @@ interface AiButtonProps {
   className?: string
 }
 
-/** Einheitlicher Auslöser für KI-Vorschläge. Ergebnisse landen immer zuerst im Formular zum Prüfen. */
 export const AiButton = ({ onClick, loading, disabled, children, className }: AiButtonProps) => (
   <Button
     variant="secondary"

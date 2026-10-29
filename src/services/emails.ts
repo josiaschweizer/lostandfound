@@ -3,7 +3,6 @@ import type { SimulatedEmail } from '@/domain/types'
 import { unwrap } from './errors'
 import { toEmail } from './mappers'
 
-/** Postausgang der eigenen Organisation (inkl. Versandstatus). */
 export const listOutbox = async (organisationId: string): Promise<SimulatedEmail[]> => {
   const rows = unwrap(
     await supabase

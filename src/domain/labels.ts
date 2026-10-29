@@ -34,7 +34,6 @@ export const COLOR_LABELS: Record<ItemColor, string> = {
   other: 'Andere Farbe',
 }
 
-/** Farbwerte für die Farbpunkte in der Oberfläche. */
 export const COLOR_SWATCHES: Record<ItemColor, string> = {
   black: '#1f2328',
   white: '#ffffff',

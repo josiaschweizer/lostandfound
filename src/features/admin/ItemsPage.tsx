@@ -17,7 +17,6 @@ import { useRequests, useStaffItems, useStaffTodo } from './queries'
 
 type StatusFilter = ItemStatus | 'all'
 
-/** Verwaltungsübersicht: alle Gegenstände der eigenen Organisation. */
 export const ItemsPage = () => {
   const { organisation } = useStaffContext()
   const items = useStaffItems()

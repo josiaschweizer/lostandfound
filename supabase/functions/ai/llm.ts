@@ -59,8 +59,8 @@ export class LlmError extends Error {
   }
 }
 
-export const DEFAULT_BASE_URL = 'https://api.deepseek.com'
-export const DEFAULT_MODEL = 'deepseek-flash'
+const DEFAULT_BASE_URL = 'https://api.deepseek.com'
+const DEFAULT_MODEL = 'deepseek-flash'
 
 export const readConfig = (env: (key: string) => string | undefined): LlmConfig | null => {
   const apiKey = env('AI_API_KEY')
@@ -75,7 +75,7 @@ export const readConfig = (env: (key: string) => string | undefined): LlmConfig 
 }
 
 /** Anbieterspezifische Zusatzfelder. DeepSeek «denkt» standardmässig – für kurze Antworten zu langsam. */
-export const providerExtras = (baseUrl: string): Record<string, unknown> =>
+const providerExtras = (baseUrl: string): Record<string, unknown> =>
   baseUrl.includes('deepseek.com') ? { thinking: { type: 'disabled' } } : {}
 
 export const buildBody = (config: LlmConfig, req: CompletionRequest): Record<string, unknown> => ({
@@ -125,7 +125,6 @@ export const parseJsonObject = (text: string | null): Record<string, unknown> =>
     const value = JSON.parse(text.slice(start, end + 1))
     if (value && typeof value === 'object' && !Array.isArray(value)) return value as Record<string, unknown>
   } catch {
-    // fällt unten durch
   }
   throw new LlmError('Die KI-Antwort war kein gültiges JSON.')
 }

@@ -7,7 +7,6 @@ const MAX_EDGE = 1600
 export const photoUrl = (path: string | null): string | null =>
   path ? supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl : null
 
-/** Verkleinert Fotos vor dem Hochladen (spart Speicher und Ladezeit). */
 const downscale = async (file: File): Promise<Blob> => {
   const bitmap = await createImageBitmap(file)
   const scale = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height))
@@ -21,7 +20,6 @@ const downscale = async (file: File): Promise<Blob> => {
   )
 }
 
-/** Lädt ein Foto in den Ordner der eigenen Organisation und liefert den Pfad. */
 export const uploadPhoto = async (organisationId: string, file: File): Promise<string> => {
   const blob = await downscale(file)
   const path = `${organisationId}/${crypto.randomUUID()}.jpg`

@@ -13,10 +13,8 @@ const STYLE = 'Schreibe auf Deutsch in Schweizer Rechtschreibung (ss statt ß), 
 const block = (label: string, value: string | null | undefined) => (value ? `${label}: ${value}` : null)
 const lines = (...parts: (string | null)[]) => parts.filter(Boolean).join('\n')
 
-// -----------------------------------------------------------------------------
 // Öffentliche Beschreibung für einen Fundgegenstand (nur Mitarbeitende)
-// -----------------------------------------------------------------------------
-export interface DescribeItemInput {
+interface DescribeItemInput {
   title: string
   category: string | null
   color: string | null
@@ -66,10 +64,8 @@ export const describeItemMessages = (input: DescribeItemInput): ChatMessage[] =>
   },
 ]
 
-// -----------------------------------------------------------------------------
 // Text für Abholhinweise oder Ablehnung einer Rückgabeanfrage (nur Mitarbeitende)
-// -----------------------------------------------------------------------------
-export interface DraftMessageInput {
+interface DraftMessageInput {
   kind: 'confirm' | 'reject'
   itemTitle: string
   itemNumber: string | null
@@ -125,10 +121,8 @@ export const draftMessageMessages = (input: DraftMessageInput): ChatMessage[] =>
   },
 ]
 
-// -----------------------------------------------------------------------------
 // Verlustmeldung aus Freitext vorausfüllen (öffentlich)
-// -----------------------------------------------------------------------------
-export interface LossReportDraft {
+interface LossReportDraft {
   title: string | null
   category: Category | null
   color: Color | null
@@ -168,13 +162,10 @@ export const cleanLossReport = (raw: Record<string, unknown>, today: string): Lo
   description: cleanText(raw.description, 1000),
 })
 
-// -----------------------------------------------------------------------------
-// KI-Suche: ergänzt die normale Katalogsuche um Treffer, die anders formuliert sind (öffentlich)
-// Der Browser schickt die Suchanfrage und bis zu 40 öffentliche Kandidaten mit.
-// -----------------------------------------------------------------------------
-export const MAX_SEARCH_CANDIDATES = 40
+// KI-Suche: ergänzt die Katalogsuche um anders beschriebene Treffer (öffentlich)
+const MAX_SEARCH_CANDIDATES = 40
 
-export interface SearchCandidate {
+interface SearchCandidate {
   id: string
   title: string
   category: Category
@@ -186,7 +177,7 @@ export interface SearchCandidate {
   organisation: string | null
 }
 
-export interface SearchInput {
+interface SearchInput {
   query: string
   items: SearchCandidate[]
 }
@@ -255,14 +246,10 @@ export const searchItemsMessages = (input: SearchInput, today: string): ChatMess
   },
 ]
 
-// -----------------------------------------------------------------------------
-// KI-Abgleich Verlustmeldung ↔ Fundgegenstand (öffentlich und Mitarbeitende)
-// Eine Seite enthält genau einen Eintrag (Anker), die andere bis zu 20 Kandidaten.
-// Personendaten (Name, Kontakt) und interne Merkmale werden nie übergeben.
-// -----------------------------------------------------------------------------
-export const MAX_MATCH_CANDIDATES = 20
+// KI-Abgleich: ein Anker (Meldung oder Fund) gegen bis zu 20 Kandidaten – ohne Namen, Kontakte oder interne Merkmale
+const MAX_MATCH_CANDIDATES = 20
 
-export interface MatchDescription {
+interface MatchDescription {
   id: string
   title: string
   category: Category
@@ -274,13 +261,13 @@ export interface MatchDescription {
   description: string | null
 }
 
-export interface MatchInput {
+interface MatchInput {
   anchor: 'lost' | 'found'
   lost: MatchDescription[]
   found: MatchDescription[]
 }
 
-export interface RankedMatch {
+interface RankedMatch {
   id: string
   score: number
   reason: string
@@ -392,9 +379,7 @@ const cleanRanked = (raw: Record<string, unknown>, ids: string[]): RankedMatch[]
   return result.sort((a, b) => b.score - a.score)
 }
 
-// -----------------------------------------------------------------------------
 // Foto eines Fundgegenstands auswerten (nur Mitarbeitende)
-// -----------------------------------------------------------------------------
 const DATA_URL = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+=*$/
 const MAX_IMAGE_CHARS = 3_000_000
 
@@ -405,7 +390,7 @@ export const readPhoto = (body: Record<string, unknown>): string | { error: stri
   return image
 }
 
-export interface PhotoAnalysis {
+interface PhotoAnalysis {
   title: string | null
   category: Category | null
   color: Color | null

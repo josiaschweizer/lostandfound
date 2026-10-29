@@ -1,6 +1,5 @@
 import { isRouteErrorResponse, useRouteError } from 'react-router'
 
-/** Verständliche Fehlerseite statt der Standardmeldung von React Router. */
 export const RouteError = () => {
   const error = useRouteError()
   const detail = isRouteErrorResponse(error) ? `${error.status} ${error.statusText}` : error instanceof Error ? error.message : String(error)

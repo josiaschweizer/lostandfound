@@ -102,7 +102,7 @@ interface ReportMatchesProps {
   notify: ReturnType<typeof useNotifyMatch>
 }
 
-/** Treffer zu einer Verlustmeldung: zuerst nach fester Regel, auf Wunsch mit KI-Abgleich (auch andere Kategorie und Wortwahl). */
+/** Zuerst Treffer nach fester Regel; der KI-Abgleich findet auch andere Kategorien und Wortwahl. */
 const ReportMatches = ({ report, items, notify }: ReportMatchesProps) => {
   const ruleMatches = findMatches(report, items).map(({ item, score }) => ({ item, detail: <span className="ml-2 text-xs text-stone-500">Übereinstimmung: {score}</span> }))
   const candidates = useMemo(() => itemCandidatesForReport(report, items), [report, items])

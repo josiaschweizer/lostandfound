@@ -4,7 +4,6 @@ import { cn } from '@/components/ui/cn'
 
 const label = (score: number) => (score >= 85 ? 'Sehr wahrscheinlich' : score >= 65 ? 'Gut möglich' : 'Möglich')
 
-/** Einschätzung der KI als Abzeichen, z. B. «Sehr wahrscheinlich · 88». */
 export const AiScoreBadge = ({ score, className }: { score: number; className?: string }) => (
   <span
     title={`KI-Einschätzung ${score} von 100`}

@@ -11,5 +11,3 @@ export const supabase = createClient<Database>(
   env.supabaseAnonKey ?? 'missing-anon-key',
   { auth: { persistSession: true, autoRefreshToken: true } },
 )
-
-export type SupabaseClient = typeof supabase

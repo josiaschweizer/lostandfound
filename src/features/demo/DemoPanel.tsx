@@ -13,10 +13,7 @@ import { Button } from '@/components/ui/Button'
 import { Alert } from '@/components/ui/Feedback'
 import { cn } from '@/components/ui/cn'
 
-/**
- * Demo-Hilfe (nur für Nutzertests/Präsentation): Rollenwechsel, eigene Links, Reset.
- * Bewusst klar gekennzeichnet – keine Funktion der echten Plattform. Online nur mit «?demo=1» sichtbar (siehe demoMode.ts).
- */
+/** Nur für Nutzertests und Präsentation – keine Funktion der echten Plattform (siehe demoMode.ts). */
 export const DemoPanel = () => {
   const { openPanel, setOpenPanel } = useDock()
   const open = openPanel === 'demo'

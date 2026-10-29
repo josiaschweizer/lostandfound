@@ -3,7 +3,7 @@ import type { ItemCategory, ItemColor, LossReport, LossReportStatus, SimulatedEm
 import { unwrap } from './errors'
 import { toLossReport } from './mappers'
 
-export interface LossReportInput {
+interface LossReportInput {
   organisationId: string | null
   name: string
   contact: string
@@ -32,7 +32,7 @@ export const submitLossReport = async (input: LossReportInput): Promise<string> 
     }),
   )
 
-export interface LossReportView {
+interface LossReportView {
   id: string
   organisationId: string | null
   reporterName: string
@@ -50,8 +50,6 @@ export interface LossReportView {
 
 export const getLossReportByToken = async (token: string): Promise<LossReportView | null> =>
   unwrap(await supabase.rpc('get_loss_report', { p_token: token })) as LossReportView | null
-
-// --- Mitarbeitende -----------------------------------------------------------
 
 /** RLS liefert Meldungen an die eigene Organisation und alle «weiss nicht»-Meldungen. */
 export const listLossReports = async (): Promise<LossReport[]> => {

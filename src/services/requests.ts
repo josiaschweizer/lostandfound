@@ -3,7 +3,7 @@ import type { ItemCategory, RequestStatus, ReturnRequest, SimulatedEmail } from 
 import { unwrap } from './errors'
 import { toReturnRequest } from './mappers'
 
-export interface ReturnRequestInput {
+interface ReturnRequestInput {
   name: string
   contact: string
   message: string
@@ -22,7 +22,7 @@ export const submitReturnRequest = async (itemId: string, input: ReturnRequestIn
     }),
   )
 
-export interface RequestStatusView {
+interface RequestStatusView {
   status: RequestStatus
   claimantName: string
   pickupInstructions: string | null
@@ -38,8 +38,6 @@ export interface RequestStatusView {
 export const getRequestStatus = async (token: string): Promise<RequestStatusView | null> =>
   unwrap(await supabase.rpc('get_return_request_status', { p_token: token })) as RequestStatusView | null
 
-// --- Mitarbeitende -----------------------------------------------------------
-
 export const listRequests = async (organisationId: string): Promise<ReturnRequest[]> => {
   const rows = unwrap(
     await supabase
@@ -49,13 +47,6 @@ export const listRequests = async (organisationId: string): Promise<ReturnReques
       .order('created_at', { ascending: false }),
   )
   return rows.map(toReturnRequest)
-}
-
-export const getRequest = async (organisationId: string, id: string): Promise<ReturnRequest | null> => {
-  const row = unwrap(
-    await supabase.from('return_requests').select('*').eq('organisation_id', organisationId).eq('id', id).maybeSingle(),
-  )
-  return row ? toReturnRequest(row) : null
 }
 
 export interface Decision {

@@ -1,4 +1,3 @@
-/** Zentrale Query-Keys für TanStack Query (einheitliches Invalidieren). */
 export const queryKeys = {
   organisations: ['organisations'] as const,
   organisation: (slug: string) => ['organisations', slug] as const,

@@ -23,14 +23,13 @@ export type AccountForm = z.infer<typeof accountSchema>
 
 const types = Object.keys(ORGANISATION_TYPE_LABELS) as [OrganisationType, ...OrganisationType[]]
 
-export const organisationSchema = z.object({
+const organisationSchema = z.object({
   organisationName: required('Bitte den Namen der Organisation angeben.').min(2, 'Mindestens 2 Zeichen.').max(120),
   organisationType: z.enum(types, { error: 'Bitte die Art der Organisation wählen.' }),
   address: required('Bitte Adresse bzw. Standort angeben.'),
 })
-export type OrganisationForm = z.infer<typeof organisationSchema>
 
-export const officeSchema = z.object({
+const officeSchema = z.object({
   officeName: z.string().trim().max(120),
   officeLocation: required('Bitte angeben, wo sich die Fundstelle befindet.'),
   contactEmail: email,
@@ -38,7 +37,6 @@ export const officeSchema = z.object({
   openingHours: required('Bitte Öffnungszeiten oder Abholzeiten angeben.'),
   pickupNotes: z.string().trim().max(500),
 })
-export type OfficeForm = z.infer<typeof officeSchema>
 
 /** Organisation und Fundstelle in einem Schritt (Version 1: genau eine Fundstelle pro Organisation). */
 export const setupSchema = organisationSchema.extend(officeSchema.shape)

@@ -147,7 +147,6 @@ interface ActionCardProps {
   text: string
   cta: string
   highlight?: boolean
-  /** Ziel-Link – oder alternativ eine Aktion (z. B. Assistent öffnen). */
   to?: string
   onClick?: () => void
 }

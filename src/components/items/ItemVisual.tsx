@@ -26,7 +26,6 @@ const CATEGORY_TINTS: Record<ItemCategory, string> = {
   other: 'from-stone-200 to-stone-100 text-stone-600',
 }
 
-/** Foto des Gegenstands oder – ohne Foto – eine Illustration der Kategorie. */
 export const ItemImage = ({ photoPath, category, title, className }: { photoPath: string | null; category: ItemCategory; title: string; className?: string }) => {
   const url = photoUrl(photoPath)
   if (url) {
