@@ -1,10 +1,16 @@
 import { useMemo, useState } from 'react'
+import { useMutation } from '@tanstack/react-query'
 import { Link } from 'react-router'
 import { BellRing, CheckCheck, SearchX } from 'lucide-react'
 import { formatDate, formatDateTime } from '@/domain/dates'
 import { CATEGORY_LABELS } from '@/domain/labels'
+import { itemCandidatesForReport, pickAiMatches, toFoundDescription, toLostDescription } from '@/domain/aiMatching'
 import { findMatches } from '@/domain/matching'
+import type { LossReport, StaffItem } from '@/domain/types'
+import { rankMatches } from '@/services/ai'
 import { toUserMessage } from '@/services/errors'
+import { AiButton } from '@/components/ai/AiButton'
+import { AiReason, AiScoreBadge } from '@/components/ai/AiMatch'
 import { ColorDot } from '@/components/items/ItemVisual'
 import { LossReportStatusBadge } from '@/components/items/StatusBadges'
 import { Button } from '@/components/ui/Button'
@@ -54,7 +60,6 @@ export const LossReportsPage = () => {
       {reports.isSuccess && list.length === 0 && <EmptyState icon={<SearchX className="size-6" />} title="Keine Verlustmeldungen" />}
       <div className="space-y-4">
         {list.map((report) => {
-          const matches = findMatches(report, publicItems)
           return (
             <Card key={report.id} className="p-5">
               <div className="flex flex-wrap items-start justify-between gap-3">
@@ -82,38 +87,85 @@ export const LossReportsPage = () => {
                   </Button>
                 )}
               </div>
-              <div className="mt-4 border-t border-stone-100 pt-3">
-                <p className="mb-2 text-xs font-medium text-stone-500 uppercase">Mögliche Treffer in Ihrem Bestand</p>
-                {matches.length === 0 ? (
-                  <p className="text-sm text-stone-500">Kein passender Gegenstand.</p>
-                ) : (
-                  <ul className="space-y-2">
-                    {matches.map(({ item, score }) => (
-                      <li key={item.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-stone-50 px-3 py-2 text-sm">
-                        <Link to={`/verwaltung/gegenstand/${item.id}`} className="font-medium hover:text-brand-700">
-                          {item.title} <span className="font-mono text-xs text-stone-500">{item.itemNumber}</span>
-                          <span className="ml-2 text-xs text-stone-500">Übereinstimmung: {score}</span>
-                        </Link>
-                        {report.status === 'open' && (
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            icon={<BellRing className="size-4" />}
-                            loading={notify.isPending && notify.variables?.reportId === report.id && notify.variables.itemId === item.id}
-                            onClick={() => notify.mutate({ reportId: report.id, itemId: item.id })}
-                          >
-                            Benachrichtigen
-                          </Button>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
+              <ReportMatches report={report} items={publicItems} notify={notify} />
             </Card>
           )
         })}
       </div>
     </>
+  )
+}
+
+interface ReportMatchesProps {
+  report: LossReport
+  items: StaffItem[]
+  notify: ReturnType<typeof useNotifyMatch>
+}
+
+/** Treffer zu einer Verlustmeldung: zuerst nach fester Regel, auf Wunsch mit KI-Abgleich (auch andere Kategorie und Wortwahl). */
+const ReportMatches = ({ report, items, notify }: ReportMatchesProps) => {
+  const ruleMatches = findMatches(report, items).map(({ item, score }) => ({ item, detail: <span className="ml-2 text-xs text-stone-500">Übereinstimmung: {score}</span> }))
+  const candidates = useMemo(() => itemCandidatesForReport(report, items), [report, items])
+  const ai = useMutation({ mutationFn: () => rankMatches({ lost: [toLostDescription(report)], found: candidates.map(toFoundDescription) }) })
+  const aiMatches = pickAiMatches(candidates, ai.data).map(({ entry, score, reason }) => ({
+    item: entry,
+    detail: (
+      <span className="mt-1 flex flex-col gap-1">
+        <AiScoreBadge score={score} className="self-start" />
+        <AiReason>{reason}</AiReason>
+      </span>
+    ),
+  }))
+  const shown = ai.isSuccess ? aiMatches : ruleMatches
+
+  return (
+    <div className="mt-4 border-t border-stone-100 pt-3">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <p className="text-xs font-medium text-stone-500 uppercase">{ai.isSuccess ? 'KI-Abgleich mit Ihrem Bestand' : 'Mögliche Treffer in Ihrem Bestand'}</p>
+        <div className="flex flex-wrap gap-2">
+          {ai.isSuccess && (
+            <Button size="sm" variant="ghost" onClick={() => ai.reset()}>
+              Regel-Treffer zeigen
+            </Button>
+          )}
+          {report.status === 'open' && candidates.length > 0 && (
+            <AiButton onClick={() => ai.mutate()} loading={ai.isPending}>
+              {ai.isSuccess ? 'Erneut abgleichen' : 'KI-Abgleich'}
+            </AiButton>
+          )}
+        </div>
+      </div>
+      {ai.isError && <p className="mb-2 text-xs font-medium text-red-700">{toUserMessage(ai.error)}</p>}
+      {ai.isSuccess && (
+        <p className="mb-2 text-xs text-stone-500">
+          {candidates.length} Gegenstände aus dem Zeitraum geprüft – auch mit anderer Kategorie oder Wortwahl. Nur Vorschläge, bitte selbst prüfen.
+        </p>
+      )}
+      {shown.length === 0 ? (
+        <p className="text-sm text-stone-500">{ai.isSuccess ? 'Die KI hat keinen wahrscheinlichen Treffer gefunden.' : 'Kein passender Gegenstand.'}</p>
+      ) : (
+        <ul className="space-y-2">
+          {shown.map(({ item, detail }) => (
+            <li key={item.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-stone-50 px-3 py-2 text-sm">
+              <Link to={`/verwaltung/gegenstand/${item.id}`} className="min-w-0 flex-1 font-medium hover:text-brand-700">
+                {item.title} <span className="font-mono text-xs text-stone-500">{item.itemNumber}</span>
+                {detail}
+              </Link>
+              {report.status === 'open' && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  icon={<BellRing className="size-4" />}
+                  loading={notify.isPending && notify.variables?.reportId === report.id && notify.variables.itemId === item.id}
+                  onClick={() => notify.mutate({ reportId: report.id, itemId: item.id })}
+                >
+                  Benachrichtigen
+                </Button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   )
 }

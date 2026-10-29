@@ -1,8 +1,12 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
+import { useMutation } from '@tanstack/react-query'
 import { RotateCcw, Search, SearchX } from 'lucide-react'
 import { filterCatalog, hasActiveFilters } from '@/domain/catalog'
 import { CATEGORY_LABELS, COLOR_LABELS, toOptions } from '@/domain/labels'
 import type { ItemCategory, ItemColor } from '@/domain/types'
+import { parseSearch } from '@/services/ai'
+import { toUserMessage } from '@/services/errors'
+import { AiButton, AiNote } from '@/components/ai/AiButton'
 import { ITEM_GRID, ItemCard, ItemCardSkeleton } from '@/components/items/ItemCard'
 import { Button, ButtonLink } from '@/components/ui/Button'
 import { EmptyState, ErrorState } from '@/components/ui/Feedback'
@@ -25,7 +29,16 @@ const FilterLabel = ({ htmlFor, children }: { htmlFor: string; children: string 
 /** Suchfeld, Filter und Ergebnisliste – global oder für eine Organisation. */
 export const CatalogBrowser = ({ organisationId }: CatalogBrowserProps) => {
   const fixed = useMemo(() => (organisationId ? { organisationId } : {}), [organisationId])
-  const { filters, setFilter, resetFilters } = useCatalogFilters(fixed)
+  const { filters, setFilter, replaceFilters, resetFilters } = useCatalogFilters(fixed)
+  const [aiQuestion, setAiQuestion] = useState<string | null>(null)
+  const aiSearch = useMutation({
+    mutationFn: parseSearch,
+    onSuccess: (next, question) => {
+      replaceFilters(next)
+      setAiQuestion(question)
+    },
+  })
+  const canAskAi = filters.query.trim().split(/\s+/).length >= 2
   const catalog = useCatalog()
   const organisations = useOrganisations()
   const lookup = useOrganisationLookup()
@@ -45,7 +58,11 @@ export const CatalogBrowser = ({ organisationId }: CatalogBrowserProps) => {
       <form
         role="search"
         className="space-y-4 rounded-3xl bg-white p-4 shadow-xs ring-1 ring-stone-200/80 sm:p-5"
-        onSubmit={(e) => e.preventDefault()}
+        onSubmit={(e) => {
+          // Enter mit einem ganzen Satz startet die KI-Suche; einzelne Wörter filtern sofort beim Tippen.
+          e.preventDefault()
+          if (canAskAi && !aiSearch.isPending) aiSearch.mutate(filters.query)
+        }}
       >
         <div>
           <label htmlFor="catalog-query" className="sr-only">
@@ -59,8 +76,21 @@ export const CatalogBrowser = ({ organisationId }: CatalogBrowserProps) => {
               placeholder="Was haben Sie verloren? z. B. Rucksack, Kopfhörer, Schlüssel"
               className="h-12 pl-10 text-base"
               value={filters.query}
-              onChange={(e) => setFilter('query', e.target.value)}
+              onChange={(e) => {
+                setFilter('query', e.target.value)
+                setAiQuestion(null)
+              }}
             />
+          </div>
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            <AiButton onClick={() => aiSearch.mutate(filters.query)} loading={aiSearch.isPending} disabled={!canAskAi}>
+              Mit KI suchen
+            </AiButton>
+            {!aiSearch.isPending && !aiQuestion && !aiSearch.isError && (
+              <p className="text-xs text-stone-500">Ganzen Satz eingeben und Enter drücken, z. B. «grünes Handy letzte Woche im Stadtpark verloren».</p>
+            )}
+            {aiQuestion && !aiSearch.isPending && <AiNote>Filter aus «{aiQuestion}» gesetzt – bei Bedarf anpassen.</AiNote>}
+            {aiSearch.isError && <p className="text-xs font-medium text-red-700">{toUserMessage(aiSearch.error)}</p>}
           </div>
         </div>
         <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1" role="group" aria-label="Kategorie">
@@ -117,7 +147,7 @@ export const CatalogBrowser = ({ organisationId }: CatalogBrowserProps) => {
             )}
           </p>
           {active && (
-            <Button variant="ghost" size="sm" icon={<RotateCcw className="size-4" />} onClick={resetFilters}>
+            <Button variant="ghost" size="sm" icon={<RotateCcw className="size-4" />} onClick={() => { resetFilters(); setAiQuestion(null) }}>
               Filter zurücksetzen
             </Button>
           )}

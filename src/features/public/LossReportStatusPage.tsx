@@ -1,9 +1,15 @@
 import { useMemo } from 'react'
+import { useMutation } from '@tanstack/react-query'
 import { useParams, useSearchParams } from 'react-router'
 import { SearchX } from 'lucide-react'
 import { formatDate } from '@/domain/dates'
 import { CATEGORY_LABELS } from '@/domain/labels'
+import { itemCandidatesForReport, pickAiMatches, toFoundDescription, toLostDescription } from '@/domain/aiMatching'
 import { findMatches, MATCH_WINDOW_DAYS } from '@/domain/matching'
+import { rankMatches } from '@/services/ai'
+import { toUserMessage } from '@/services/errors'
+import { AiButton } from '@/components/ai/AiButton'
+import { AiReason, AiScoreBadge } from '@/components/ai/AiMatch'
 import { ColorDot } from '@/components/items/ItemVisual'
 import { ITEM_GRID, ItemCard } from '@/components/items/ItemCard'
 import { LossReportStatusBadge } from '@/components/items/StatusBadges'
@@ -26,11 +32,21 @@ export const LossReportStatusPage = () => {
     [report.data, catalog.data],
   )
 
+  // KI-Abgleich: alle Funde aus dem Zeitraum, auch mit anderer Kategorie oder Wortwahl.
+  const aiCandidates = useMemo(
+    () => (report.data && catalog.data ? itemCandidatesForReport(report.data, catalog.data) : []),
+    [report.data, catalog.data],
+  )
+  const ai = useMutation({
+    mutationFn: () => rankMatches({ lost: [toLostDescription(report.data!)], found: aiCandidates.map(toFoundDescription) }),
+  })
+
   if (report.isPending) return <Spinner />
   if (report.isError) return <ErrorState error={report.error} />
   if (!report.data) return <EmptyState title="Meldung nicht gefunden">Bitte prüfen Sie den Link aus Ihrer Bestätigung.</EmptyState>
 
   const r = report.data
+  const aiMatches = pickAiMatches(aiCandidates, ai.data)
   const orgName = r.organisationId ? lookup.get(r.organisationId)?.name : 'Alle Fundstellen («Weiss nicht»)'
 
   return (
@@ -68,6 +84,41 @@ export const LossReportStatusPage = () => {
               </li>
             ))}
           </ul>
+        )}
+
+        {r.status === 'open' && aiCandidates.length > 0 && (
+          <div className="mt-6 space-y-4 rounded-3xl bg-brand-50/60 p-4 ring-1 ring-brand-100 sm:p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="max-w-xl">
+                <p className="font-semibold text-stone-900">KI-Abgleich</p>
+                <p className="text-sm text-stone-600">
+                  Die KI vergleicht Ihre Meldung mit {aiCandidates.length} {aiCandidates.length === 1 ? 'Fund' : 'Funden'} aus dem Zeitraum – auch wenn andere
+                  Wörter oder eine andere Kategorie verwendet wurden.
+                </p>
+              </div>
+              <AiButton onClick={() => ai.mutate()} loading={ai.isPending}>
+                {ai.isSuccess ? 'Erneut abgleichen' : 'Mit KI abgleichen'}
+              </AiButton>
+            </div>
+            {ai.isError && <p className="text-sm font-medium text-red-700">{toUserMessage(ai.error)}</p>}
+            {ai.isSuccess &&
+              (aiMatches.length === 0 ? (
+                <p className="text-sm text-stone-600">Die KI hat keinen wahrscheinlichen Treffer gefunden. Sie können später erneut abgleichen.</p>
+              ) : (
+                <ul className={ITEM_GRID}>
+                  {aiMatches.map(({ entry: item, score, reason }) => (
+                    <li key={item.id} className="space-y-2">
+                      <ItemCard item={item} to={`/fund/${item.id}`} organisationName={lookup.get(item.organisationId)?.name} />
+                      <div className="space-y-1 px-1">
+                        <AiScoreBadge score={score} />
+                        <AiReason>{reason}</AiReason>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ))}
+            {ai.isSuccess && <p className="text-xs text-stone-500">Nur Vorschläge der KI – ob es Ihr Gegenstand ist, klärt die Fundstelle mit Ihrer Rückgabeanfrage.</p>}
+          </div>
         )}
       </section>
 

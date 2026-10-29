@@ -418,3 +418,8 @@ enabled = true
 enabled = true
 # Aufruf kommt vom Datenbank-Trigger (pg_net) mit eigenem Secret statt Benutzer-JWT.
 verify_jwt = false
+
+[functions.ai]
+enabled = true
+# Öffentlich aufrufbar (Chat, Suche). Mitarbeitenden-Aufgaben prüft die Function selbst.
+verify_jwt = false

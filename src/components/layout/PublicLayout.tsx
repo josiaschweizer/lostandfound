@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router'
 import { Menu, X } from 'lucide-react'
 import { useAuth } from '@/app/useAuth'
+import { AssistantWidget } from '@/features/assistant/AssistantWidget'
 import { ButtonLink } from '../ui/Button'
 import { cn } from '../ui/cn'
 import { Logo } from './Logo'
@@ -65,10 +66,11 @@ export const PublicLayout = () => {
         <Outlet />
       </main>
       <footer className="border-t border-stone-200 bg-white">
-        <div className="mx-auto max-w-6xl px-4 py-6 text-sm text-stone-500">
+        <div className="mx-auto max-w-6xl px-4 pt-6 pb-32 text-sm text-stone-500 sm:pb-6">
           Schulprototyp (Modul M241) · Beispieldaten sind erfunden · Bitte keine echten Personendaten eingeben.
         </div>
       </footer>
+      <AssistantWidget />
     </div>
   )
 }

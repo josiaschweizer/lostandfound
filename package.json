@@ -14,7 +14,8 @@
     "db:push": "supabase db push --include-seed",
     "db:types": "supabase gen types typescript --linked --schema public > src/lib/database.types.ts",
     "fn:deploy": "supabase functions deploy send-email",
-    "fn:test": "deno test supabase/functions/send-email/"
+    "fn:deploy:ai": "supabase functions deploy ai",
+    "fn:test": "deno test supabase/functions/send-email/ supabase/functions/ai/"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.2",

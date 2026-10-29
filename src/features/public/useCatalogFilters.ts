@@ -38,9 +38,21 @@ export const useCatalogFilters = (fixed: Partial<CatalogFilters>) => {
     [setParams],
   )
 
+  /** Ersetzt alle Filter auf einmal (z. B. nach der KI-Suche). */
+  const replaceFilters = useCallback(
+    (next: Partial<CatalogFilters>) => {
+      const params = new URLSearchParams()
+      for (const [key, value] of Object.entries(next) as [keyof CatalogFilters, string][]) {
+        if (value && !(key in fixed)) params.set(PARAM_NAMES[key], value)
+      }
+      setParams(params, { replace: true })
+    },
+    [setParams, fixed],
+  )
+
   const resetFilters = useCallback(() => setParams(new URLSearchParams(), { replace: true }), [setParams])
 
-  return { filters, setFilter, resetFilters }
+  return { filters, setFilter, replaceFilters, resetFilters }
 }
 
 export const searchUrl = (filters: Partial<CatalogFilters>): string => {

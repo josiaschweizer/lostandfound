@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation } from '@tanstack/react-query'
@@ -5,7 +6,9 @@ import { useNavigate, useSearchParams } from 'react-router'
 import { todayIso } from '@/domain/dates'
 import { CATEGORY_LABELS, COLOR_LABELS, toOptions } from '@/domain/labels'
 import { saveLink } from '@/lib/localTokens'
+import { parseLossReport } from '@/services/ai'
 import { toUserMessage } from '@/services/errors'
+import { AiButton, AiNote } from '@/components/ai/AiButton'
 import { submitLossReport } from '@/services/lossReports'
 import { Button } from '@/components/ui/Button'
 import { Alert } from '@/components/ui/Feedback'
@@ -41,6 +44,17 @@ export const LossReportPage = () => {
     },
   })
   const { errors } = form.formState
+  const [freeText, setFreeText] = useState('')
+  const ai = useMutation({
+    mutationFn: parseLossReport,
+    onSuccess: (draft) => {
+      const fields = ['title', 'category', 'color', 'brand', 'lostOn', 'lostLocation', 'description'] as const
+      for (const key of fields) {
+        const value = draft[key]
+        if (value) form.setValue(key, value, { shouldDirty: true, shouldValidate: true })
+      }
+    },
+  })
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -49,6 +63,30 @@ export const LossReportPage = () => {
         description="Beschreiben Sie den Gegenstand. Wir zeigen Ihnen sofort mögliche Treffer und informieren Sie, wenn ein passender Fund erfasst wird."
       />
       <form noValidate onSubmit={form.handleSubmit((v) => mutation.mutate(v))} className="space-y-6">
+        <CardSection
+          title="In eigenen Worten beschreiben"
+          description="Optional: Erzählen Sie kurz, was passiert ist – die KI füllt das Formular unten für Sie aus."
+        >
+          <div className="space-y-3">
+            <Textarea
+              aria-label="Beschreibung in eigenen Worten"
+              rows={3}
+              maxLength={2000}
+              placeholder="z. B. Ich habe letzten Dienstag im Bus Linie 3 meine blaue Nike-Regenjacke liegen lassen."
+              value={freeText}
+              onChange={(e) => setFreeText(e.target.value)}
+            />
+            <div className="flex flex-wrap items-center gap-3">
+              <AiButton onClick={() => ai.mutate(freeText)} loading={ai.isPending} disabled={freeText.trim().length < 10}>
+                Formular ausfüllen
+              </AiButton>
+              {ai.isSuccess && <AiNote>Felder wurden ausgefüllt – bitte unten prüfen und ergänzen.</AiNote>}
+              {ai.isError && <p className="text-xs font-medium text-red-700">{toUserMessage(ai.error)}</p>}
+            </div>
+            <p className="text-xs text-stone-500">Ihr Text wird zur Auswertung an einen KI-Dienst gesendet. Bitte keine Namen oder Kontaktdaten eingeben.</p>
+          </div>
+        </CardSection>
+
         <CardSection title="Wo haben Sie den Gegenstand verloren?">
           <Field
             label="Organisation"
