@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router'
-import { CheckCircle2, ChevronRight, EyeOff, Inbox, PackagePlus, PackageSearch, RotateCcw } from 'lucide-react'
+import { CheckCircle2, ChevronRight, EyeOff, Inbox, PackageSearch, RotateCcw } from 'lucide-react'
 import { EMPTY_FILTERS, filterCatalog } from '@/domain/catalog'
 import { formatDate } from '@/domain/dates'
 import { CATEGORY_LABELS, ITEM_STATUS_LABELS, toOptions } from '@/domain/labels'
@@ -51,50 +51,43 @@ export const ItemsPage = () => {
 
   return (
     <>
-      <PageHeader
-        title="Fundgegenstände"
-        description={`Verwaltung von ${organisation.office.name} · ${organisation.name}`}
-        actions={
-          <ButtonLink to="/verwaltung/neu" icon={<PackagePlus className="size-4" />}>
-            Fundgegenstand erfassen
-          </ButtonLink>
-        }
-      />
+      <PageHeader title="Fundgegenstände" description={organisation.office.name} />
 
-      <section aria-labelledby="todo-title" className="mb-6">
+      <section aria-labelledby="todo-title" className="mb-5 sm:mb-6">
         <h2 id="todo-title" className="mb-2 text-sm font-semibold text-stone-700">
           Zu erledigen
         </h2>
         {!todo.isLoading && todo.openRequests + todo.awaitingPickup + todo.reportsWithMatches === 0 ? (
           <p className="flex items-center gap-2 rounded-2xl bg-emerald-50 p-4 text-sm text-emerald-900 ring-1 ring-emerald-200">
-            <CheckCircle2 className="size-5 text-emerald-600" aria-hidden /> Alles erledigt – keine offenen Anfragen und keine neuen Treffer zu Verlustmeldungen.
+            <CheckCircle2 className="size-5 shrink-0 text-emerald-600" aria-hidden /> Alles erledigt – keine offenen Anfragen und keine neuen Treffer.
           </p>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
             <TodoCard to="/verwaltung/anfragen" count={todo.openRequests} label="Anfragen prüfen" hint="Eigentumsnachweis vergleichen" />
-            <TodoCard to="/verwaltung/anfragen?status=confirmed" count={todo.awaitingPickup} label="Abholung ausstehend" hint="Nach der Übergabe abschliessen" />
-            <TodoCard to="/verwaltung/meldungen" count={todo.reportsWithMatches} label="Verlustmeldungen mit Treffer" hint="Person benachrichtigen" />
+            <TodoCard to="/verwaltung/anfragen?status=confirmed" count={todo.awaitingPickup} label="Abholung offen" hint="Nach der Übergabe abschliessen" />
+            <TodoCard to="/verwaltung/meldungen" count={todo.reportsWithMatches} label="Meldungen mit Treffer" hint="Person benachrichtigen" />
           </div>
         )}
       </section>
 
-      <Card className="mb-4 space-y-3 p-4">
-        <div className="flex flex-wrap gap-1" role="tablist" aria-label="Nach Status filtern">
+      <Card className="mb-4 space-y-3 p-3 sm:p-4">
+        <div className="scrollbar-none -mx-3 flex gap-1 overflow-x-auto px-3 sm:mx-0 sm:px-0" role="tablist" aria-label="Nach Status filtern">
           {(['all', 'available', 'reserved', 'returned'] as const).map((s) => (
             <button
               key={s}
               role="tab"
               aria-selected={status === s}
               onClick={() => setStatus(s)}
-              className={cn('rounded-lg px-3 py-1.5 text-sm font-medium transition', status === s ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100')}
+              className={cn('shrink-0 rounded-lg px-3 py-2 text-sm font-medium whitespace-nowrap transition sm:py-1.5', status === s ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100')}
             >
               {s === 'all' ? 'Alle' : ITEM_STATUS_LABELS[s]} <span className="ml-1 opacity-70">{counts[s]}</span>
             </button>
           ))}
         </div>
-        <div className="grid gap-3 sm:grid-cols-[1fr_16rem]">
+        <div className="grid grid-cols-[1fr_9.5rem] gap-2 sm:grid-cols-[1fr_16rem] sm:gap-3">
           <label className="sr-only" htmlFor="staff-q">Suche</label>
-          <Input id="staff-q" type="search" placeholder="Suchen: Titel, Fundnummer, Merkmal, Aufbewahrungsort …" value={query} onChange={(e) => setQuery(e.target.value)} />
+          <Input id="staff-q" type="search" placeholder="Suchen …"
+            title="Suche in Titel, Fundnummer, Merkmal und Aufbewahrungsort" value={query} onChange={(e) => setQuery(e.target.value)} />
           <label className="sr-only" htmlFor="staff-cat">Kategorie</label>
           <Select id="staff-cat" placeholder="Alle Kategorien" options={toOptions(CATEGORY_LABELS)} value={category} onChange={(e) => setCategory(e.target.value as ItemCategory | '')} />
         </div>
@@ -156,14 +149,14 @@ const TodoCard = ({ to, count, label, hint }: { to: string; count: number; label
   <Link
     to={to}
     className={cn(
-      'rounded-2xl p-4 shadow-xs ring-1 transition',
+      'rounded-2xl p-3 shadow-xs ring-1 transition sm:p-4',
       count > 0 ? 'bg-brand-600 text-white ring-brand-600 hover:bg-brand-700' : 'bg-white text-stone-500 ring-stone-200 hover:ring-stone-300',
     )}
   >
-    <p className="flex items-center justify-between text-2xl font-semibold">
-      {count} <ChevronRight className="size-5" aria-hidden />
+    <p className="flex items-center justify-between text-xl font-semibold sm:text-2xl">
+      {count} <ChevronRight className="size-5 max-sm:hidden" aria-hidden />
     </p>
-    <p className={cn('text-sm font-medium', count > 0 ? 'text-white' : 'text-stone-700')}>{label}</p>
-    <p className={cn('text-xs', count > 0 ? 'text-brand-100' : 'text-stone-500')}>{hint}</p>
+    <p className={cn('text-xs leading-tight font-medium sm:text-sm', count > 0 ? 'text-white' : 'text-stone-700')}>{label}</p>
+    <p className={cn('text-xs max-sm:hidden', count > 0 ? 'text-brand-100' : 'text-stone-500')}>{hint}</p>
   </Link>
 )

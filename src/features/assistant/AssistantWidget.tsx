@@ -108,7 +108,11 @@ export const AssistantWidget = () => {
       {open && (
         <section
           aria-label="Fund-Assistent"
-          className="flex h-[min(36rem,calc(100dvh-10rem))] w-[min(24rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-3xl bg-stone-50 shadow-2xl ring-1 ring-stone-200"
+          className={cn(
+            'flex flex-col overflow-hidden bg-stone-50 shadow-2xl ring-1 ring-stone-200',
+            'fixed inset-x-0 bottom-0 z-50 h-[85dvh] rounded-t-3xl',
+            'sm:static sm:h-[min(36rem,calc(100dvh-10rem))] sm:w-[24rem] sm:rounded-3xl',
+          )}
         >
           <header className="flex items-center justify-between gap-3 bg-brand-700 px-4 py-3 text-white">
             <div>
@@ -172,7 +176,7 @@ export const AssistantWidget = () => {
             )}
           </div>
 
-          <form onSubmit={onSubmit} className="border-t border-stone-200 bg-white p-3">
+          <form onSubmit={onSubmit} className="border-t border-stone-200 bg-white p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             <div className="flex items-end gap-2">
               <label htmlFor="assistant-input" className="sr-only">
                 Nachricht an den Assistenten
@@ -208,7 +212,11 @@ export const AssistantWidget = () => {
         onClick={() => setOpenPanel(open ? null : 'assistant')}
         aria-expanded={open}
         aria-label={open ? 'Assistent schliessen' : 'Assistent öffnen'}
-        className="flex h-10 items-center gap-2 rounded-full bg-brand-700 px-4 font-medium text-white shadow-lg transition hover:bg-brand-800"
+        className={cn(
+          'h-12 items-center gap-2 rounded-full bg-brand-700 px-4 font-medium text-white shadow-lg transition hover:bg-brand-800',
+          // Auf dem Handy deckt das offene Blatt den Knopf ab; dort schliesst das X im Kopf.
+          open ? 'hidden sm:flex' : 'flex',
+        )}
       >
         {open ? <X className="size-5" /> : <MessageCircle className="size-5" />}
         <span className="text-sm">{open ? 'Schliessen' : 'Fragen?'}</span>

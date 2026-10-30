@@ -12,6 +12,7 @@ import type { ItemInput } from '@/services/staffItems'
 import { imageToDataUrl } from '@/lib/image'
 import { analyzePhoto, suggestItemDescription } from '@/services/ai'
 import { AiButton, AiNote } from '@/components/ai/AiButton'
+import { ActionBar } from '@/components/ui/ActionBar'
 import { Button } from '@/components/ui/Button'
 import { Alert } from '@/components/ui/Feedback'
 import { Checkbox, Field, Input, RequiredNote, Select, Textarea } from '@/components/ui/Form'
@@ -147,15 +148,15 @@ export const ItemForm = ({ item, submitLabel, onSubmit, onCancel }: ItemFormProp
       <RequiredNote />
       <CardSection
         title="Öffentliche Angaben"
-        description="Diese Angaben sehen Suchende im Fundkatalog. Keine Merkmale angeben, die einen Eigentumsnachweis verraten."
+        description="Sehen Suchende im Fundkatalog. Nichts angeben, was einen Eigentumsnachweis verrät."
         actions={
           <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700">
             <Eye className="size-4" aria-hidden /> Öffentlich
           </span>
         }
       >
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="sm:col-span-2">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="col-span-2">
             <p className="mb-1.5 text-sm font-medium text-stone-800">
               Foto <span className="ml-1 text-xs font-normal text-stone-500">(optional)</span>
             </p>
@@ -212,7 +213,7 @@ export const ItemForm = ({ item, submitLabel, onSubmit, onCancel }: ItemFormProp
               </div>
             )}
           </div>
-          <Field label="Titel" required className="sm:col-span-2" error={errors.title?.message} hint="Kurz und allgemein, z. B. «Kabellose Kopfhörer»">
+          <Field label="Titel" required className="col-span-2" error={errors.title?.message} hint="Kurz und allgemein, z. B. «Kabellose Kopfhörer»">
             {(p) => <Input {...p} {...form.register('title')} />}
           </Field>
           <Field label="Kategorie" required error={errors.category?.message}>
@@ -221,16 +222,16 @@ export const ItemForm = ({ item, submitLabel, onSubmit, onCancel }: ItemFormProp
           <Field label="Farbe" required error={errors.color?.message}>
             {(p) => <Select {...p} {...form.register('color')} placeholder="Bitte wählen" options={toOptions(COLOR_LABELS)} />}
           </Field>
-          <Field label="Marke" error={errors.brand?.message} hint="Falls bekannt">
+          <Field label="Marke" error={errors.brand?.message}>
             {(p) => <Input {...p} {...form.register('brand')} />}
           </Field>
           <Field label="Funddatum" required error={errors.foundOn?.message}>
             {(p) => <Input type="date" max={todayIso()} {...p} {...form.register('foundOn')} />}
           </Field>
-          <Field label="Fundort" required className="sm:col-span-2" error={errors.foundLocation?.message} hint="z. B. Mensa, Bus Linie 3">
+          <Field label="Fundort" required className="col-span-2" error={errors.foundLocation?.message} hint="z. B. Mensa, Bus Linie 3">
             {(p) => <Input {...p} {...form.register('foundLocation')} />}
           </Field>
-          <div className="space-y-2 sm:col-span-2">
+          <div className="col-span-2 space-y-2">
             <Field
               label="Öffentliche Beschreibung"
               error={errors.publicDescription?.message}
@@ -246,7 +247,7 @@ export const ItemForm = ({ item, submitLabel, onSubmit, onCancel }: ItemFormProp
               {aiState.error && <p className="text-xs font-medium text-red-700">{aiState.error}</p>}
             </div>
           </div>
-          <div className="sm:col-span-2">
+          <div className="col-span-2">
             <Checkbox label="Im öffentlichen Fundkatalog anzeigen" description="Deaktivieren z. B. bei Ausweisen oder sensiblen Gegenständen." {...form.register('isPublic')} />
           </div>
         </div>
@@ -282,14 +283,14 @@ export const ItemForm = ({ item, submitLabel, onSubmit, onCancel }: ItemFormProp
 
       {Object.keys(errors).length > 0 && <Alert tone="error">Bitte die markierten Felder prüfen.</Alert>}
       {submitError && <Alert tone="error">{submitError}</Alert>}
-      <div className="flex flex-wrap justify-end gap-2">
-        <Button variant="ghost" onClick={onCancel}>
+      <ActionBar className="lg:justify-end">
+        <Button variant="secondary" size="lg" onClick={onCancel} className="max-w-36">
           Abbrechen
         </Button>
-        <Button type="submit" loading={isSubmitting}>
+        <Button type="submit" size="lg" loading={isSubmitting}>
           {submitLabel}
         </Button>
-      </div>
+      </ActionBar>
     </form>
   )
 }

@@ -16,7 +16,8 @@ import { LossReportStatusBadge } from '@/components/items/StatusBadges'
 import { SimulatedEmailCard } from '@/components/items/SimulatedEmailCard'
 import { ButtonLink } from '@/components/ui/Button'
 import { Alert, EmptyState, ErrorState, Spinner } from '@/components/ui/Feedback'
-import { CardSection, DefinitionList, PageHeader } from '@/components/ui/Layout'
+import { DefinitionList, PageHeader } from '@/components/ui/Layout'
+import { Disclosure } from '@/components/ui/Disclosure'
 import { useCatalog, useLossReport, useOrganisationLookup } from './queries'
 
 /** Statusseite der Verlustmeldung (nur über geheimen Link erreichbar) mit möglichen Treffern. */
@@ -49,21 +50,20 @@ export const LossReportStatusPage = () => {
   const orgName = r.organisationId ? lookup.get(r.organisationId)?.name : 'Alle Fundstellen («Weiss nicht»)'
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       <PageHeader eyebrow="Ihre Verlustmeldung" title={r.title} actions={<LossReportStatusBadge status={r.status} />} />
       {params.get('neu') && (
         <Alert tone="success" title="Verlustmeldung erfasst">
-          Sie finden diese Meldung jederzeit unter «Meine Anfragen» oben im Menü (in diesem Browser) oder über den Link in der Bestätigungs-E-Mail.
+          Sie finden sie jederzeit unter «Meine Anfragen» im Menü (in diesem Browser) oder über den Link in der Bestätigungs-E-Mail.
         </Alert>
       )}
 
       <section aria-labelledby="matches-title">
-        <h2 id="matches-title" className="text-xl font-semibold">
+        <h2 id="matches-title" className="text-lg font-semibold sm:text-xl">
           Mögliche Treffer
         </h2>
         <p className="mb-4 text-sm text-stone-600">
-          Gleiche Kategorie, gefunden am Verlusttag oder bis {MATCH_WINDOW_DAYS} Tage danach. Sortiert nach Farbe und gemeinsamen Stichworten. Dies sind
-          nur Vorschläge.
+          Gleiche Kategorie, gefunden bis {MATCH_WINDOW_DAYS} Tage nach dem Verlust, sortiert nach Farbe und Stichworten. Nur Vorschläge.
         </p>
         {catalog.isPending ? (
           <Spinner />
@@ -91,8 +91,7 @@ export const LossReportStatusPage = () => {
               <div className="max-w-xl">
                 <p className="font-semibold text-stone-900">KI-Abgleich</p>
                 <p className="text-sm text-stone-600">
-                  Die KI vergleicht Ihre Meldung mit {aiCandidates.length} {aiCandidates.length === 1 ? 'Fund' : 'Funden'} aus dem Zeitraum – auch wenn andere
-                  Wörter oder eine andere Kategorie verwendet wurden.
+                  Vergleicht mit {aiCandidates.length} {aiCandidates.length === 1 ? 'Fund' : 'Funden'} aus dem Zeitraum – auch bei anderer Wortwahl oder Kategorie.
                 </p>
               </div>
               <AiButton onClick={() => ai.mutate()} loading={ai.isPending}>
@@ -121,8 +120,8 @@ export const LossReportStatusPage = () => {
         )}
       </section>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <CardSection title="Angaben">
+      <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
+        <Disclosure title="Ihre Angaben" summary={`${CATEGORY_LABELS[r.category]} · verloren am ${formatDate(r.lostOn)}`}>
           <DefinitionList
             items={[
               { label: 'Gemeldet bei', value: orgName },
@@ -134,14 +133,14 @@ export const LossReportStatusPage = () => {
               { label: 'Beschreibung', value: r.description },
             ]}
           />
-        </CardSection>
-        <CardSection title="Nachrichten" description="Diese Nachrichten erhalten Sie per E-Mail (sofern der Versand eingerichtet ist).">
+        </Disclosure>
+        <Disclosure title="Nachrichten" summary={`${r.emails.length} ${r.emails.length === 1 ? 'Nachricht' : 'Nachrichten'} per E-Mail`}>
           <div className="space-y-3">
             {r.emails.map((email) => (
               <SimulatedEmailCard key={email.id} email={email} />
             ))}
           </div>
-        </CardSection>
+        </Disclosure>
       </div>
     </div>
   )

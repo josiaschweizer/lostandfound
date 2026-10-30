@@ -16,7 +16,7 @@ export const RootLayout = () => {
   return (
     <DockContext.Provider value={dock}>
       <Outlet />
-      <div className="pointer-events-none fixed right-4 bottom-4 z-50 flex flex-col items-end gap-3 print:hidden">
+      <div className="pointer-events-none fixed right-4 bottom-[calc(var(--bottom-nav)+var(--action-bar)+1rem)] z-40 flex flex-col items-end gap-3 print:hidden">
         <div ref={setSlot} className="pointer-events-auto flex flex-col items-end gap-3 empty:hidden" />
         <div className="pointer-events-auto">
           <DemoPanel />

@@ -2,7 +2,6 @@ import { createContext, useContext } from 'react'
 
 export type DockPanel = 'assistant' | 'demo' | null
 
-/** Ecke unten rechts für Assistent und Demo-Hilfe: Knöpfe stapeln sich, höchstens ein Fenster ist offen. */
 interface DockState {
   /** DOM-Knoten, in den der Assistent per Portal gerendert wird (über der Demo-Hilfe). */
   slot: HTMLElement | null

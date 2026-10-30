@@ -7,6 +7,7 @@ import { saveLink } from '@/lib/localTokens'
 import { submitReturnRequest } from '@/services/requests'
 import { toUserMessage } from '@/services/errors'
 import type { FoundItem } from '@/domain/types'
+import { ActionBar } from '@/components/ui/ActionBar'
 import { Button } from '@/components/ui/Button'
 import { Alert } from '@/components/ui/Feedback'
 import { Field, Input, RequiredNote, Textarea } from '@/components/ui/Form'
@@ -40,7 +41,7 @@ export const ReturnRequestForm = ({ item }: { item: FoundItem }) => {
           <Link to={`/status/anfrage/${token}`} className="font-medium text-brand-700 underline underline-offset-2">
             Anfrage verfolgen
           </Link>
-          . Sie finden die Anfrage auch jederzeit unter «Meine Anfragen» oben im Menü. Eine Bestätigung erhalten Sie zusätzlich per E-Mail, sofern Sie eine E-Mail-Adresse angegeben haben.
+          . Sie finden sie auch unter «Meine Anfragen» im Menü und – bei Angabe einer E-Mail-Adresse – in der Bestätigung per E-Mail.
         </p>
       </div>
     )
@@ -59,7 +60,7 @@ export const ReturnRequestForm = ({ item }: { item: FoundItem }) => {
       <Field
         label="Besonderes Merkmal (Eigentumsnachweis)"
         required
-        hint="Beschreiben Sie etwas, das nur die Besitzerin oder der Besitzer wissen kann – z. B. Aufkleber, Gravur, Inhalt, Beschädigung."
+        hint="Etwas, das nur Sie wissen können – z. B. Aufkleber, Gravur, Inhalt, Beschädigung."
         error={errors.proof?.message}
       >
         {(p) => <Textarea rows={3} {...p} {...form.register('proof')} />}
@@ -68,9 +69,11 @@ export const ReturnRequestForm = ({ item }: { item: FoundItem }) => {
         {(p) => <Textarea rows={3} {...p} {...form.register('message')} />}
       </Field>
       {mutation.isError && <Alert tone="error">{toUserMessage(mutation.error)}</Alert>}
-      <Button type="submit" loading={mutation.isPending} className="w-full sm:w-auto">
-        Rückgabe anfragen
-      </Button>
+      <ActionBar>
+        <Button type="submit" size="lg" loading={mutation.isPending}>
+          Rückgabe anfragen
+        </Button>
+      </ActionBar>
     </form>
   )
 }

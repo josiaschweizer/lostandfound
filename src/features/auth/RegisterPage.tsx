@@ -14,7 +14,7 @@ import { Alert, Spinner } from '@/components/ui/Feedback'
 import { Field, Input, RequiredNote, Select, Textarea } from '@/components/ui/Form'
 import { CardSection, PageHeader } from '@/components/ui/Layout'
 import { accountSchema, setupSchema, type AccountForm, type SetupForm } from './schemas'
-import { Stepper } from './Stepper'
+import { Stepper } from '@/components/ui/Stepper'
 
 const STEPS = ['Konto erstellen', 'Organisation & Fundstelle', 'Fertig']
 

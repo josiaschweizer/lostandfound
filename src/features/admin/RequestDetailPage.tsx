@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/Button'
 import { Alert, EmptyState, ErrorState, Spinner } from '@/components/ui/Feedback'
 import { Field, Textarea } from '@/components/ui/Form'
 import { CardSection, DefinitionList, PageHeader } from '@/components/ui/Layout'
+import { Disclosure } from '@/components/ui/Disclosure'
 import { SimulatedEmailCard } from '@/components/items/SimulatedEmailCard'
 import { useChangeItemStatus, useDecideRequest, useOutbox, useRequests, useStaffItem } from './queries'
 import { RejectOpenRequests } from './RejectOpenRequests'
@@ -83,7 +84,7 @@ export const RequestDetailPage = () => {
     )
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <BackLink to="/verwaltung/anfragen" label="Zu den Anfragen" />
       <PageHeader eyebrow="Rückgabeanfrage" title={request.claimantName} actions={<RequestStatusBadge status={request.status} />} />
 
@@ -101,33 +102,21 @@ export const RequestDetailPage = () => {
         </Alert>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <CardSection title="Angaben der suchenden Person">
-          <DefinitionList
-            items={[
-              { label: 'Name', value: request.claimantName },
-              { label: 'Kontakt', value: request.claimantContact },
-              { label: 'Eingegangen', value: formatDateTime(request.createdAt) },
-              { label: 'Nachricht', value: request.message },
-            ]}
-          />
-          <div className="mt-4 rounded-xl bg-sky-50 p-4 ring-1 ring-sky-200">
+      <CardSection title="Eigentum prüfen" description="Stimmt der Nachweis mit dem internen Merkmal überein?">
+        <Link to={`/verwaltung/gegenstand/${item.data.id}`} className="mb-4 flex items-center gap-3 rounded-xl p-1 hover:bg-stone-50">
+          <ItemImage photoPath={item.data.photoPath} category={item.data.category} title={item.data.title} className="size-12 shrink-0 rounded-lg" />
+          <span className="min-w-0 flex-1">
+            <span className="block truncate font-medium">{item.data.title}</span>
+            <span className="block font-mono text-xs text-stone-500">{item.data.itemNumber}</span>
+          </span>
+          <ItemStatusBadge status={item.data.status} />
+        </Link>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="rounded-xl bg-sky-50 p-4 ring-1 ring-sky-200">
             <p className="text-xs font-semibold tracking-wide text-sky-800 uppercase">Eigentumsnachweis</p>
             <p className="mt-1 text-stone-900">{request.proofDescription}</p>
+            {request.message && <p className="mt-2 text-sm text-stone-600">Nachricht: {request.message}</p>}
           </div>
-        </CardSection>
-
-        <CardSection title="Gegenstand">
-          <Link to={`/verwaltung/gegenstand/${item.data.id}`} className="mb-4 flex items-center gap-3 hover:text-brand-700">
-            <ItemImage photoPath={item.data.photoPath} category={item.data.category} title={item.data.title} className="size-14 rounded-lg" />
-            <span>
-              <span className="block font-medium">{item.data.title}</span>
-              <span className="block font-mono text-xs text-stone-500">{item.data.itemNumber}</span>
-            </span>
-            <span className="ml-auto">
-              <ItemStatusBadge status={item.data.status} />
-            </span>
-          </Link>
           <div className="rounded-xl bg-accent-50 p-4 ring-1 ring-accent-100">
             <p className="flex items-center gap-1 text-xs font-semibold tracking-wide text-accent-700 uppercase">
               <Lock className="size-3.5" aria-hidden /> Internes Erkennungsmerkmal
@@ -135,8 +124,8 @@ export const RequestDetailPage = () => {
             <p className="mt-1 text-stone-900">{item.data.internal.identifyingFeature || <span className="text-stone-500">Kein Merkmal erfasst.</span>}</p>
             {item.data.internal.storageLocation && <p className="mt-2 text-sm text-stone-600">Aufbewahrt: {item.data.internal.storageLocation}</p>}
           </div>
-        </CardSection>
-      </div>
+        </div>
+      </CardSection>
 
       <CardSection title="Entscheidung">
         {request.status === 'confirmed' && (
@@ -147,6 +136,7 @@ export const RequestDetailPage = () => {
             <div className="flex flex-wrap gap-2">
               <Button
                 variant="success"
+                className="max-sm:w-full"
                 icon={<PackageCheck className="size-4" />}
                 loading={changeStatus.isPending}
                 onClick={() => changeStatus.mutate({ id: item.data!.id, status: 'returned' })}
@@ -172,10 +162,10 @@ export const RequestDetailPage = () => {
         )}
         {request.status === 'open' && mode === 'idle' && (
           <div className="flex flex-wrap gap-2">
-            <Button icon={<Check className="size-4" />} disabled={!canConfirm} onClick={() => setMode('confirm')}>
+            <Button size="lg" className="flex-1 sm:flex-none" icon={<Check className="size-4" />} disabled={!canConfirm} onClick={() => setMode('confirm')}>
               Bestätigen
             </Button>
-            <Button variant="danger" icon={<X className="size-4" />} disabled={!canReject} onClick={() => setMode('reject')}>
+            <Button variant="danger" size="lg" className="flex-1 sm:flex-none" icon={<X className="size-4" />} disabled={!canReject} onClick={() => setMode('reject')}>
               Ablehnen
             </Button>
             {!canConfirm && (
@@ -196,8 +186,8 @@ export const RequestDetailPage = () => {
             <p className="text-sm text-stone-600">
               Ort: {organisation.office.location} · {organisation.office.openingHours}
             </p>
-            <div className="flex gap-2">
-              <Button loading={decide.isPending} disabled={!pickup.trim()} onClick={() => submitDecision(true)}>
+            <div className="flex flex-wrap gap-2">
+              <Button className="max-sm:w-full" loading={decide.isPending} disabled={!pickup.trim()} onClick={() => submitDecision(true)}>
                 Anfrage bestätigen und reservieren
               </Button>
               <Button variant="ghost" onClick={() => setMode('idle')}>
@@ -208,7 +198,7 @@ export const RequestDetailPage = () => {
         )}
         {mode === 'reject' && (
           <div className="space-y-4">
-            <Field label="Begründung" hint="Wird der suchenden Person per E-Mail mitgeteilt. Tipp: Stichworte eingeben und «Text formulieren» wählen.">
+            <Field label="Begründung" hint="Geht per E-Mail an die Person. Tipp: Stichworte eingeben, dann «Text formulieren».">
               {(p) => <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} {...p} />}
             </Field>
             {aiRow('reject')}
@@ -226,14 +216,24 @@ export const RequestDetailPage = () => {
         {changeStatus.isError && <Alert tone="error" className="mt-3">{toUserMessage(changeStatus.error)}</Alert>}
       </CardSection>
 
+      <Disclosure title="Angaben der suchenden Person" summary={`${request.claimantContact} · ${formatDateTime(request.createdAt)}`}>
+        <DefinitionList
+          items={[
+            { label: 'Name', value: request.claimantName },
+            { label: 'Kontakt', value: request.claimantContact },
+            { label: 'Eingegangen', value: formatDateTime(request.createdAt) },
+          ]}
+        />
+      </Disclosure>
+
       {messages.length > 0 && (
-        <CardSection title="Nachrichten an diese Person" description="Bestätigung und Entscheid, wie sie per E-Mail versendet wurden.">
+        <Disclosure title="Nachrichten an diese Person" summary={`${messages.length} ${messages.length === 1 ? 'Nachricht' : 'Nachrichten'} – Bestätigung und Entscheid`}>
           <div className="space-y-3">
             {messages.map((email) => (
               <SimulatedEmailCard key={email.id} email={email} />
             ))}
           </div>
-        </CardSection>
+        </Disclosure>
       )}
     </div>
   )

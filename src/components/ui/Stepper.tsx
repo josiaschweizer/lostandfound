@@ -1,13 +1,13 @@
 import { Check } from 'lucide-react'
-import { cn } from '@/components/ui/cn'
+import { cn } from './cn'
 
-export const Stepper = ({ steps, current }: { steps: string[]; current: number }) => (
-  <ol className="mb-8 grid gap-2 sm:auto-cols-fr sm:grid-flow-col" aria-label="Fortschritt">
+export const Stepper = ({ steps, current, className }: { steps: string[]; current: number; className?: string }) => (
+  <ol className={cn('mb-6 grid auto-cols-fr grid-flow-col gap-2 sm:mb-8', className)} aria-label="Fortschritt">
     {steps.map((label, index) => {
       const done = index < current
       const active = index === current
       return (
-        <li key={label} aria-current={active ? 'step' : undefined} className="flex items-center gap-2 text-sm">
+        <li key={label} aria-current={active ? 'step' : undefined} className="flex flex-col items-center gap-1.5 text-center text-xs sm:flex-row sm:text-left sm:text-sm">
           <span
             className={cn(
               'flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold',

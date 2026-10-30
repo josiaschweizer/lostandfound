@@ -1,4 +1,3 @@
-/** Wird angezeigt, wenn .env.local fehlt – statt kryptischer Netzwerkfehler. */
 export const SetupNotice = () => (
   <main className="mx-auto max-w-2xl px-4 py-16">
     <h1 className="text-2xl font-semibold">Supabase ist noch nicht konfiguriert</h1>
