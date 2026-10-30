@@ -64,18 +64,18 @@ export const StaffItemPage = () => {
     : matchingReports.map((report) => ({ report, score: null as number | null, reason: '' }))
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <BackLink to="/verwaltung" label="Zur Übersicht" />
       <PageHeader
         eyebrow={<span className="font-mono">{data.itemNumber}</span>}
         title={data.title}
         actions={
           <>
-            <ButtonLink to={`/verwaltung/gegenstand/${id}/bearbeiten`} variant="secondary" icon={<Pencil className="size-4" />}>
+            <ButtonLink to={`/verwaltung/gegenstand/${id}/bearbeiten`} variant="secondary" size="sm" icon={<Pencil className="size-4" />}>
               Bearbeiten
             </ButtonLink>
             {data.isPublic && data.status !== 'returned' && (
-              <ButtonLink to={`/fund/${id}`} variant="ghost" icon={<ExternalLink className="size-4" />}>
+              <ButtonLink to={`/fund/${id}`} variant="ghost" size="sm" icon={<ExternalLink className="size-4" />}>
                 Öffentliche Ansicht
               </ButtonLink>
             )}
@@ -89,11 +89,11 @@ export const StaffItemPage = () => {
       )}
       {flash?.saved && <Alert tone="success">Änderungen gespeichert.</Alert>}
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
-        <div className="space-y-6">
-          <Card className="overflow-hidden sm:flex">
-            <ItemImage photoPath={data.photoPath} category={data.category} title={data.title} className="aspect-4/3 w-full sm:aspect-auto sm:w-56" />
-            <div className="flex-1 p-5">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-[1fr_22rem] lg:items-start">
+        <div className="space-y-6 max-lg:contents">
+          <Card className="overflow-hidden max-lg:order-1 sm:flex">
+            <ItemImage photoPath={data.photoPath} category={data.category} title={data.title} className="aspect-[2/1] w-full sm:aspect-auto sm:w-56" />
+            <div className="flex-1 p-4 sm:p-5">
               <DefinitionList
                 items={[
                   { label: 'Kategorie', value: CATEGORY_LABELS[data.category] },
@@ -110,7 +110,7 @@ export const StaffItemPage = () => {
 
           <CardSection
             title="Interne Angaben"
-            className="bg-accent-50/40"
+            className="bg-accent-50/40 max-lg:order-5"
             actions={
               <span className="inline-flex items-center gap-1 text-xs font-medium text-accent-700">
                 <Lock className="size-4" aria-hidden /> Nur für Ihre Organisation
@@ -126,7 +126,7 @@ export const StaffItemPage = () => {
             />
           </CardSection>
 
-          <CardSection title="Rückgabeanfragen" description="Eine Anfrage ändert den Status nicht automatisch – mehrere Personen können denselben Gegenstand beanspruchen.">
+          <CardSection title="Rückgabeanfragen" description="Eine Anfrage ändert den Status nicht – mehrere Personen können anfragen." className="max-lg:order-3">
             {itemRequests.length === 0 ? (
               <p className="text-sm text-stone-500">Noch keine Anfragen.</p>
             ) : (
@@ -147,14 +147,13 @@ export const StaffItemPage = () => {
           </CardSection>
         </div>
 
-        <div className="space-y-6">
-          <CardSection title="Status">
+        <div className="space-y-6 max-lg:contents">
+          <CardSection title="Status" className="max-lg:order-2">
             <div className="mb-3">
               <ItemStatusBadge status={data.status} />
             </div>
             <p className="text-sm text-stone-600">
-              Der Status ändert sich normalerweise über die Anfragen: <strong>Bestätigen</strong> reserviert den Gegenstand, <strong>«Übergabe erfolgt»</strong>{' '}
-              schliesst die Rückgabe ab.
+              Ändert sich über die Anfragen: <strong>Bestätigen</strong> reserviert, <strong>«Übergabe erfolgt»</strong> schliesst ab.
             </p>
             {stillOpen.length > 0 && data.status === 'returned' && (
               <div className="mt-3">
@@ -190,6 +189,7 @@ export const StaffItemPage = () => {
           {(matchingReports.length > 0 || aiCandidates.length > 0) && (
             <CardSection
               title="Passende Verlustmeldungen"
+              className="max-lg:order-4"
               description={
                 ai.isSuccess
                   ? 'Von der KI bewertet – auch mit anderer Kategorie oder Wortwahl. Nur Vorschläge.'

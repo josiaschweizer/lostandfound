@@ -1,8 +1,9 @@
 import { useId, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react'
 import { cn } from './cn'
 
+/** 16 px Schrift auf dem Handy verhindert, dass iOS beim Antippen hineinzoomt. */
 const CONTROL =
-  'block w-full rounded-lg border-0 bg-white px-3 py-2.5 text-sm text-stone-900 shadow-xs ring-1 ring-inset ring-stone-300 ' +
+  'block w-full rounded-lg border-0 bg-white px-3 py-2.5 text-base text-stone-900 sm:text-sm shadow-xs ring-1 ring-inset ring-stone-300 ' +
   'placeholder:text-stone-400 focus:ring-2 focus:ring-brand-600 focus:outline-none disabled:bg-stone-100'
 const INVALID = 'ring-red-500 focus:ring-red-600'
 

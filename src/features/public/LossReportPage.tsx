@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type FormEvent } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation } from '@tanstack/react-query'
@@ -16,6 +16,9 @@ import { Button } from '@/components/ui/Button'
 import { Alert } from '@/components/ui/Feedback'
 import { Field, Input, RequiredNote, Select, Textarea } from '@/components/ui/Form'
 import { CardSection, PageHeader } from '@/components/ui/Layout'
+import { ActionBar } from '@/components/ui/ActionBar'
+import { Disclosure } from '@/components/ui/Disclosure'
+import { Stepper } from '@/components/ui/Stepper'
 import { ColorDot, ItemImage } from '@/components/items/ItemVisual'
 import { cn } from '@/components/ui/cn'
 import { ContactHint } from './ContactHint'
@@ -30,6 +33,12 @@ const daysAgo = (days: number) => {
   d.setDate(d.getDate() - days)
   return todayIso(d)
 }
+
+const STEPS = [
+  { label: 'Gegenstand', fields: ['title', 'category', 'color', 'brand', 'description'] },
+  { label: 'Ort & Datum', fields: ['organisationId', 'lostOn', 'lostLocation'] },
+  { label: 'Kontakt', fields: ['name', 'contact'] },
+] as const satisfies { label: string; fields: (keyof LossReportForm)[] }[]
 
 const DATE_SHORTCUTS = [
   { label: 'Heute', days: 0 },
@@ -98,112 +107,147 @@ export const LossReportPage = () => {
     },
   })
 
+  const [step, setStep] = useState(0)
+  const isLastStep = step === STEPS.length - 1
+  const goToStep = (next: number) => {
+    setStep(next)
+    window.scrollTo({ top: 0 })
+  }
+
+  const onSubmit = async (event: FormEvent) => {
+    event.preventDefault()
+    if (!isLastStep) {
+      if (await form.trigger([...(STEPS[step]?.fields ?? [])])) goToStep(step + 1)
+      return
+    }
+    await form.handleSubmit(
+      (values) => mutation.mutate(values),
+      // Fehler in einem früheren Schritt (z. B. aus der Suche übernommen): dorthin springen
+      (fieldErrors) => {
+        const firstInvalid = STEPS.findIndex((s) => s.fields.some((field) => field in fieldErrors))
+        if (firstInvalid >= 0) goToStep(firstInvalid)
+      },
+    )()
+  }
+
   return (
-    <div className="mx-auto max-w-3xl">
-      <PageHeader
-        title="Verlust melden"
-        description="Beschreiben Sie den Gegenstand. Wir zeigen Ihnen sofort mögliche Treffer und informieren Sie, wenn ein passender Fund erfasst wird."
-      />
-      <form noValidate onSubmit={form.handleSubmit((v) => mutation.mutate(v))} className="space-y-6">
-        <CardSection
-          title="In eigenen Worten beschreiben"
-          description="Optional: Erzählen Sie kurz, was passiert ist – die KI füllt das Formular unten für Sie aus."
-        >
-          <div className="space-y-3">
-            <Textarea
-              aria-label="Beschreibung in eigenen Worten"
-              rows={3}
-              maxLength={2000}
-              placeholder="z. B. Ich habe letzten Dienstag im Bus Linie 3 meine blaue Nike-Regenjacke liegen lassen."
-              value={freeText}
-              onChange={(e) => setFreeText(e.target.value)}
-            />
-            <div className="flex flex-wrap items-center gap-3">
-              <AiButton onClick={() => ai.mutate(freeText)} loading={ai.isPending} disabled={freeText.trim().length < 10}>
-                Formular ausfüllen
-              </AiButton>
-              {ai.isSuccess && <AiNote>Felder wurden ausgefüllt – bitte unten prüfen und ergänzen.</AiNote>}
-              {ai.isError && <p className="text-xs font-medium text-red-700">{toUserMessage(ai.error)}</p>}
-            </div>
-            <p className="text-xs text-stone-500">Ihr Text wird zur Auswertung an einen KI-Dienst gesendet. Bitte keine Namen oder Kontaktdaten eingeben.</p>
-          </div>
-        </CardSection>
+    <div className="mx-auto max-w-2xl">
+      <PageHeader title="Verlust melden" description="In drei kurzen Schritten. Passende Funde zeigen wir Ihnen sofort." />
+      <Stepper steps={STEPS.map((s) => s.label)} current={step} />
 
-        <CardSection title="Wo haben Sie den Gegenstand verloren?">
-          <Field
-            label="Fundstelle"
-            required
-            hint={'Wählen Sie «Weiss nicht», wenn Sie es nicht wissen – dann sehen alle Fundstellen Ihre Meldung.'}
-            error={errors.organisationId?.message}
-          >
-            {(p) => (
-              <Select
-                {...p}
-                {...form.register('organisationId')}
-                placeholder="Weiss nicht – bei allen Fundstellen melden"
-                options={(organisations.data ?? []).map((o) => ({ value: o.id, label: o.name }))}
-              />
-            )}
-          </Field>
-        </CardSection>
-
-        <CardSection title="Was haben Sie verloren?">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Bezeichnung" required className="sm:col-span-2" error={errors.title?.message} hint="z. B. Schwarzer Rucksack">
-              {(p) => <Input {...p} {...form.register('title')} />}
-            </Field>
-            <Field label="Kategorie" required error={errors.category?.message}>
-              {(p) => <Select {...p} {...form.register('category')} placeholder="Bitte wählen" options={toOptions(CATEGORY_LABELS)} />}
-            </Field>
-            <Field label="Farbe" required error={errors.color?.message}>
-              {(p) => <Select {...p} {...form.register('color')} placeholder="Bitte wählen" options={toOptions(COLOR_LABELS)} />}
-            </Field>
-            <Field label="Marke" error={errors.brand?.message}>
-              {(p) => <Input {...p} {...form.register('brand')} />}
-            </Field>
-            <Field label="Verloren am" required error={errors.lostOn?.message} hint="Unsicher? Wählen Sie den frühesten möglichen Tag.">
-              {(p) => (
-                <div className="space-y-2">
-                  <Input type="date" max={todayIso()} {...p} {...form.register('lostOn')} />
-                  <div className="flex flex-wrap gap-1.5" role="group" aria-label="Datum schnell wählen">
-                    {DATE_SHORTCUTS.map(({ label, days }) => {
-                      const value = daysAgo(days)
-                      return (
-                        <button
-                          key={label}
-                          type="button"
-                          onClick={() => form.setValue('lostOn', value, { shouldDirty: true, shouldValidate: true })}
-                          className={cn(
-                            'rounded-full px-2.5 py-1 text-xs font-medium ring-1 transition',
-                            lostOn === value ? 'bg-stone-900 text-white ring-stone-900' : 'bg-white text-stone-700 ring-stone-200 hover:ring-stone-400',
-                          )}
-                        >
-                          {label}
-                        </button>
-                      )
-                    })}
-                  </div>
+      <form noValidate onSubmit={onSubmit} className="space-y-4 sm:space-y-6">
+        {step === 0 && (
+          <>
+            <Disclosure title="In eigenen Worten beschreiben" summary="Die KI füllt das Formular aus" className="ring-brand-100">
+              <div className="space-y-3">
+                <Textarea
+                  aria-label="Beschreibung in eigenen Worten"
+                  rows={3}
+                  maxLength={2000}
+                  placeholder="z. B. Ich habe letzten Dienstag im Bus Linie 3 meine blaue Nike-Regenjacke liegen lassen."
+                  value={freeText}
+                  onChange={(e) => setFreeText(e.target.value)}
+                />
+                <div className="flex flex-wrap items-center gap-3">
+                  <AiButton onClick={() => ai.mutate(freeText)} loading={ai.isPending} disabled={freeText.trim().length < 10}>
+                    Formular ausfüllen
+                  </AiButton>
+                  {ai.isSuccess && <AiNote>Felder ausgefüllt – bitte prüfen.</AiNote>}
+                  {ai.isError && <p className="text-xs font-medium text-red-700">{toUserMessage(ai.error)}</p>}
                 </div>
-              )}
-            </Field>
-            <Field label="Ort des Verlusts" className="sm:col-span-2" error={errors.lostLocation?.message}>
-              {(p) => <Input {...p} {...form.register('lostLocation')} />}
-            </Field>
-            <Field
-              label="Beschreibung"
-              className="sm:col-span-2"
-              hint="Allgemeine Beschreibung. Ganz persönliche Merkmale geben Sie besser erst bei einer Rückgabeanfrage an."
-              error={errors.description?.message}
-            >
-              {(p) => <Textarea {...p} {...form.register('description')} />}
-            </Field>
-          </div>
-        </CardSection>
+                <p className="text-xs text-stone-500">Der Text geht an einen KI-Dienst. Bitte keine Namen oder Kontaktdaten eingeben.</p>
+              </div>
+            </Disclosure>
+
+            <CardSection title="Was haben Sie verloren?">
+              <div className="grid grid-cols-2 gap-4">
+                <Field label="Bezeichnung" required className="col-span-2" error={errors.title?.message}>
+                  {(p) => <Input placeholder="z. B. Schwarzer Rucksack" {...p} {...form.register('title')} />}
+                </Field>
+                <Field label="Kategorie" required error={errors.category?.message}>
+                  {(p) => <Select {...p} {...form.register('category')} placeholder="Bitte wählen" options={toOptions(CATEGORY_LABELS)} />}
+                </Field>
+                <Field label="Farbe" required error={errors.color?.message}>
+                  {(p) => <Select {...p} {...form.register('color')} placeholder="Bitte wählen" options={toOptions(COLOR_LABELS)} />}
+                </Field>
+                <Field label="Marke" className="col-span-2 sm:col-span-1" error={errors.brand?.message}>
+                  {(p) => <Input {...p} {...form.register('brand')} />}
+                </Field>
+                <Field
+                  label="Beschreibung"
+                  className="col-span-2"
+                  hint="Ganz persönliche Merkmale erst bei einer Rückgabeanfrage angeben."
+                  error={errors.description?.message}
+                >
+                  {(p) => <Textarea {...p} {...form.register('description')} />}
+                </Field>
+              </div>
+            </CardSection>
+          </>
+        )}
+
+        {step === 1 && (
+          <CardSection title="Wo und wann?">
+            <div className="space-y-4">
+              <Field label="Fundstelle" required hint="«Weiss nicht»: Alle Fundstellen sehen Ihre Meldung." error={errors.organisationId?.message}>
+                {(p) => (
+                  <Select
+                    {...p}
+                    {...form.register('organisationId')}
+                    placeholder="Weiss nicht – bei allen melden"
+                    options={(organisations.data ?? []).map((o) => ({ value: o.id, label: o.name }))}
+                  />
+                )}
+              </Field>
+              <Field label="Verloren am" required error={errors.lostOn?.message} hint="Unsicher? Den frühesten möglichen Tag wählen.">
+                {(p) => (
+                  <div className="space-y-2">
+                    <Input type="date" max={todayIso()} {...p} {...form.register('lostOn')} />
+                    <div className="flex flex-wrap gap-2" role="group" aria-label="Datum schnell wählen">
+                      {DATE_SHORTCUTS.map(({ label, days }) => {
+                        const value = daysAgo(days)
+                        return (
+                          <button
+                            key={label}
+                            type="button"
+                            onClick={() => form.setValue('lostOn', value, { shouldDirty: true, shouldValidate: true })}
+                            className={cn(
+                              'rounded-full px-3 py-1.5 text-sm font-medium ring-1 transition',
+                              lostOn === value ? 'bg-stone-900 text-white ring-stone-900' : 'bg-white text-stone-700 ring-stone-200 hover:ring-stone-400',
+                            )}
+                          >
+                            {label}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+              </Field>
+              <Field label="Ort des Verlusts" error={errors.lostLocation?.message}>
+                {(p) => <Input placeholder="z. B. Bus Linie 3, Mensa" {...p} {...form.register('lostLocation')} />}
+              </Field>
+            </div>
+          </CardSection>
+        )}
+
+        {step === 2 && (
+          <CardSection title="Wie erreichen wir Sie?">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Name" required error={errors.name?.message}>
+                {(p) => <Input autoComplete="name" {...p} {...form.register('name')} />}
+              </Field>
+              <Field label="Kontaktadresse" required hint={<ContactHint value={contact} />} error={errors.contact?.message}>
+                {(p) => <Input autoComplete="email" {...p} {...form.register('contact')} />}
+              </Field>
+            </div>
+          </CardSection>
+        )}
 
         {liveMatches.length > 0 && (
           <CardSection
             title="Ist es vielleicht einer davon?"
-            description="Diese Funde passen zu Ihren Angaben. Öffnen Sie einen Treffer, um direkt die Rückgabe anzufragen – Ihre Eingaben hier bleiben erhalten."
+            description="Passt zu Ihren Angaben. Öffnet in neuem Tab – Ihre Eingaben bleiben erhalten."
             className="ring-brand-200"
           >
             <ul className="space-y-2">
@@ -219,7 +263,7 @@ export const LossReportPage = () => {
                     <span className="min-w-0 flex-1 text-sm">
                       <span className="block truncate font-medium">{item.title}</span>
                       <span className="flex flex-wrap items-center gap-x-2 text-xs text-stone-500">
-                        <ColorDot color={item.color} /> gefunden am {formatDate(item.foundOn)} · {lookup.get(item.organisationId)?.name}
+                        <ColorDot color={item.color} /> {formatDate(item.foundOn)} · {lookup.get(item.organisationId)?.name}
                       </span>
                     </span>
                     <ExternalLink className="size-4 shrink-0 text-stone-400" aria-label="öffnet in neuem Tab" />
@@ -230,24 +274,18 @@ export const LossReportPage = () => {
           </CardSection>
         )}
 
-        <CardSection title="Wie erreichen wir Sie?">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Name" required error={errors.name?.message}>
-              {(p) => <Input autoComplete="name" {...p} {...form.register('name')} />}
-            </Field>
-            <Field label="Kontaktadresse" required hint={<ContactHint value={contact} />} error={errors.contact?.message}>
-              {(p) => <Input autoComplete="email" {...p} {...form.register('contact')} />}
-            </Field>
-          </div>
-        </CardSection>
-
         {mutation.isError && <Alert tone="error">{toUserMessage(mutation.error)}</Alert>}
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <RequiredNote />
+        <RequiredNote />
+        <ActionBar className="lg:justify-end">
+          {step > 0 && (
+            <Button variant="secondary" size="lg" onClick={() => goToStep(step - 1)} className="max-w-32">
+              Zurück
+            </Button>
+          )}
           <Button type="submit" size="lg" loading={mutation.isPending}>
-            Verlust melden
+            {isLastStep ? 'Verlust melden' : 'Weiter'}
           </Button>
-        </div>
+        </ActionBar>
       </form>
     </div>
   )

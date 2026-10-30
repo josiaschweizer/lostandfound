@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { Link } from 'react-router'
-import { BellRing, CheckCheck, SearchX } from 'lucide-react'
+import { BellRing, CheckCheck, ChevronDown, SearchX } from 'lucide-react'
 import { formatDate, formatDateTime } from '@/domain/dates'
 import { CATEGORY_LABELS } from '@/domain/labels'
 import { itemCandidatesForReport, pickAiMatches, toFoundDescription, toLostDescription } from '@/domain/aiMatching'
@@ -19,7 +19,6 @@ import { Badge, Card, PageHeader } from '@/components/ui/Layout'
 import { cn } from '@/components/ui/cn'
 import { useCloseLossReport, useLossReports, useNotifyMatch, useStaffItems } from './queries'
 
-/** Verlustmeldungen an die eigene Organisation sowie alle «Weiss nicht»-Meldungen, mit Treffern aus dem eigenen Bestand. */
 export const LossReportsPage = () => {
   const reports = useLossReports()
   const items = useStaffItems()
@@ -34,7 +33,7 @@ export const LossReportsPage = () => {
     <>
       <PageHeader
         title="Verlustmeldungen"
-        description="Meldungen an Ihre Organisation und Meldungen mit «Weiss nicht». Treffer stammen aus Ihren öffentlichen Gegenständen."
+        description="An Ihre Organisation und mit «Weiss nicht». Treffer aus Ihren öffentlichen Gegenständen."
       />
       <div className="mb-4 flex gap-1" role="tablist">
         {[false, true].map((closed) => (
@@ -43,7 +42,7 @@ export const LossReportsPage = () => {
             role="tab"
             aria-selected={showClosed === closed}
             onClick={() => setShowClosed(closed)}
-            className={cn('rounded-lg px-3 py-1.5 text-sm font-medium', showClosed === closed ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100')}
+            className={cn('rounded-lg px-3 py-2 text-sm font-medium sm:py-1.5', showClosed === closed ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100')}
           >
             {closed ? 'Alle' : 'Offen'}
           </button>
@@ -61,32 +60,36 @@ export const LossReportsPage = () => {
       <div className="space-y-4">
         {list.map((report) => {
           return (
-            <Card key={report.id} className="p-5">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="font-semibold">{report.title}</h2>
-                    <LossReportStatusBadge status={report.status} />
-                    {!report.organisationId && <Badge tone="violet">Weiss nicht – an alle Fundstellen</Badge>}
-                  </div>
-                  <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-stone-600">
-                    <span>{CATEGORY_LABELS[report.category]}</span>
-                    <ColorDot color={report.color} />
-                    {report.brand && <span>{report.brand}</span>}
-                    <span>verloren am {formatDate(report.lostOn)}</span>
-                    {report.lostLocation && <span>{report.lostLocation}</span>}
-                  </p>
-                  {report.description && <p className="mt-2 text-sm text-stone-700">{report.description}</p>}
-                  <p className="mt-2 text-xs text-stone-500">
+            <Card key={report.id} className="p-4 sm:p-5">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="font-semibold">{report.title}</h2>
+                <LossReportStatusBadge status={report.status} />
+                {!report.organisationId && <Badge tone="violet">Weiss nicht – an alle</Badge>}
+              </div>
+              <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-stone-600">
+                <span>{CATEGORY_LABELS[report.category]}</span>
+                <ColorDot color={report.color} />
+                {report.brand && <span>{report.brand}</span>}
+                <span>verloren am {formatDate(report.lostOn)}</span>
+              </p>
+              <details className="group mt-2 text-sm">
+                <summary className="inline-flex cursor-pointer list-none items-center gap-1 font-medium text-brand-700 [&::-webkit-details-marker]:hidden">
+                  Details und Kontakt
+                  <ChevronDown className="size-4 transition group-open:rotate-180" aria-hidden />
+                </summary>
+                <div className="mt-2 space-y-1 text-stone-700">
+                  {report.lostLocation && <p>Ort: {report.lostLocation}</p>}
+                  {report.description && <p>{report.description}</p>}
+                  <p className="text-xs text-stone-500">
                     {report.reporterName} · {report.reporterContact} · gemeldet {formatDateTime(report.createdAt)}
                   </p>
+                  {report.status === 'open' && (
+                    <Button size="sm" variant="ghost" className="-ml-3" icon={<CheckCheck className="size-4" />} onClick={() => close.mutate(report.id)}>
+                      Als erledigt markieren
+                    </Button>
+                  )}
                 </div>
-                {report.status === 'open' && (
-                  <Button size="sm" variant="ghost" icon={<CheckCheck className="size-4" />} onClick={() => close.mutate(report.id)}>
-                    Als erledigt markieren
-                  </Button>
-                )}
-              </div>
+              </details>
               <ReportMatches report={report} items={publicItems} notify={notify} />
             </Card>
           )
@@ -102,7 +105,6 @@ interface ReportMatchesProps {
   notify: ReturnType<typeof useNotifyMatch>
 }
 
-/** Zuerst Treffer nach fester Regel; der KI-Abgleich findet auch andere Kategorien und Wortwahl. */
 const ReportMatches = ({ report, items, notify }: ReportMatchesProps) => {
   const ruleMatches = findMatches(report, items).map(({ item, score }) => ({ item, detail: <span className="ml-2 text-xs text-stone-500">Übereinstimmung: {score}</span> }))
   const candidates = useMemo(() => itemCandidatesForReport(report, items), [report, items])

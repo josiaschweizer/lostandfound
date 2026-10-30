@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router'
-import { RotateCcw, Search, SearchX, Sparkles } from 'lucide-react'
+import { RotateCcw, Search, SearchX, SlidersHorizontal, Sparkles } from 'lucide-react'
 import { AI_SEARCH_MAX_CANDIDATES, pickAiMatches, toSearchCandidate } from '@/domain/aiMatching'
-import { filterCatalog, hasActiveFilters } from '@/domain/catalog'
+import { filterCatalog, hasActiveFilters, type CatalogFilters } from '@/domain/catalog'
 import { CATEGORY_LABELS, COLOR_LABELS, toOptions } from '@/domain/labels'
 import type { ItemCategory, ItemColor } from '@/domain/types'
 import { useDebouncedValue } from '@/lib/useDebouncedValue'
@@ -14,6 +14,7 @@ import { ITEM_GRID, ItemCard, ItemCardSkeleton } from '@/components/items/ItemCa
 import { Button, ButtonLink } from '@/components/ui/Button'
 import { EmptyState, ErrorState } from '@/components/ui/Feedback'
 import { Input, Select } from '@/components/ui/Form'
+import { Sheet } from '@/components/ui/Sheet'
 import { cn } from '@/components/ui/cn'
 import { useCatalog, useOrganisationLookup, useOrganisations } from './queries'
 import { lossReportUrl, useCatalogFilters } from './useCatalogFilters'
@@ -24,7 +25,7 @@ interface CatalogBrowserProps {
 }
 
 const FilterLabel = ({ htmlFor, children }: { htmlFor: string; children: string }) => (
-  <label htmlFor={htmlFor} className="mb-1 block text-xs font-medium text-stone-600">
+  <label htmlFor={htmlFor} className="mb-1 block text-sm font-medium text-stone-700 lg:text-xs lg:text-stone-600">
     {children}
   </label>
 )
@@ -73,13 +74,21 @@ export const CatalogBrowser = ({ organisationId }: CatalogBrowserProps) => {
   const aiMatches = aiEnabled && aiSearch.data ? pickAiMatches(aiCandidates, aiSearch.data) : []
   const aiPending = aiEnabled && aiSearch.isFetching
 
+  const resultCount = results.length + aiMatches.length
+  const detailFilterCount = [filters.color, organisationId ? '' : filters.organisationId, filters.foundFrom, filters.foundTo].filter(Boolean).length
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false)
+  const filterFields = (idPrefix: string) => (
+    <FilterFields
+      idPrefix={idPrefix}
+      filters={filters}
+      setFilter={setFilter}
+      organisations={organisationId ? undefined : (organisations.data ?? []).map((o) => ({ value: o.id, label: o.name }))}
+    />
+  )
+
   return (
-    <div className="space-y-6">
-      <form
-        role="search"
-        className="space-y-4 rounded-3xl bg-white p-4 shadow-xs ring-1 ring-stone-200/80 sm:p-5"
-        onSubmit={(e) => e.preventDefault()}
-      >
+    <div className="space-y-5 sm:space-y-6">
+      <form role="search" className="space-y-3 rounded-3xl bg-white p-3 shadow-xs ring-1 ring-stone-200/80 sm:space-y-4 sm:p-5" onSubmit={(e) => e.preventDefault()}>
         <div>
           <label htmlFor="catalog-query" className="sr-only">
             Suchbegriff
@@ -89,8 +98,8 @@ export const CatalogBrowser = ({ organisationId }: CatalogBrowserProps) => {
             <Input
               id="catalog-query"
               type="search"
-              placeholder={aiEnabled ? 'Beschreiben Sie, was Sie verloren haben …' : 'Was haben Sie verloren? z. B. Rucksack, Natel, Schlüssel'}
-              className="h-12 pr-24 pl-10 text-base"
+              placeholder={aiEnabled ? 'Beschreiben Sie den Gegenstand …' : 'Was suchen Sie?'}
+              className="h-12 pr-24 pl-10 sm:text-base!"
               value={filters.query}
               onChange={(e) => setFilter('query', e.target.value)}
             />
@@ -101,7 +110,7 @@ export const CatalogBrowser = ({ organisationId }: CatalogBrowserProps) => {
               aria-label="KI-Suche"
               title={aiEnabled ? 'KI-Suche ausschalten' : 'KI-Suche einschalten: findet auch anders beschriebene Gegenstände'}
               onClick={toggleAi}
-              className="absolute top-1/2 right-2 flex -translate-y-1/2 items-center gap-1.5 rounded-full py-1 pr-1 pl-2 text-xs font-semibold text-stone-600 hover:bg-stone-100"
+              className="absolute top-1/2 right-2 flex -translate-y-1/2 items-center gap-1.5 rounded-full py-1.5 pr-1 pl-2 text-xs font-semibold text-stone-600 hover:bg-stone-100"
             >
               <Sparkles className={cn('size-3.5', aiEnabled ? 'text-brand-600' : 'text-stone-400')} aria-hidden />
               KI
@@ -112,12 +121,13 @@ export const CatalogBrowser = ({ organisationId }: CatalogBrowserProps) => {
           </div>
           {aiEnabled && (
             <p className="mt-2 flex items-center gap-1 text-xs text-brand-700">
-              <Sparkles className="size-3.5" aria-hidden />
-              KI-Suche aktiv: Zusätzlich zu den Treffern sucht die KI nach anders beschriebenen Gegenständen – auch ganze Sätze funktionieren.
+              <Sparkles className="size-3.5 shrink-0" aria-hidden />
+              KI-Suche aktiv: findet auch anders beschriebene Gegenstände – ganze Sätze funktionieren.
             </p>
           )}
         </div>
-        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1" role="group" aria-label="Kategorie">
+
+        <div className="scrollbar-none -mx-3 flex gap-2 overflow-x-auto px-3 sm:-mx-1 sm:px-1" role="group" aria-label="Kategorie">
           {[{ value: '' as const, label: 'Alle' }, ...toOptions(CATEGORY_LABELS)].map((c) => {
             const active = filters.category === c.value
             return (
@@ -127,7 +137,7 @@ export const CatalogBrowser = ({ organisationId }: CatalogBrowserProps) => {
                 aria-pressed={active}
                 onClick={() => setFilter('category', c.value as ItemCategory | '')}
                 className={cn(
-                  'shrink-0 rounded-full px-3.5 py-1.5 text-sm font-medium whitespace-nowrap ring-1 transition',
+                  'shrink-0 rounded-full px-3.5 py-2 text-sm font-medium whitespace-nowrap ring-1 transition sm:py-1.5',
                   active ? 'bg-stone-900 text-white ring-stone-900' : 'bg-white text-stone-700 ring-stone-200 hover:ring-stone-400',
                 )}
               >
@@ -136,50 +146,57 @@ export const CatalogBrowser = ({ organisationId }: CatalogBrowserProps) => {
             )
           })}
         </div>
-        <div className={cn('grid gap-3 sm:grid-cols-2', organisationId ? 'lg:grid-cols-3' : 'lg:grid-cols-4')}>
-          <div>
-            <FilterLabel htmlFor="f-color">Farbe</FilterLabel>
-            <Select id="f-color" placeholder="Alle Farben" options={toOptions(COLOR_LABELS)} value={filters.color} onChange={(e) => setFilter('color', e.target.value as ItemColor | '')} />
-          </div>
-          {!organisationId && (
-            <div>
-              <FilterLabel htmlFor="f-org">Fundstelle</FilterLabel>
-              <Select
-                id="f-org"
-                placeholder="Alle Fundstellen"
-                options={(organisations.data ?? []).map((o) => ({ value: o.id, label: o.name }))}
-                value={filters.organisationId}
-                onChange={(e) => setFilter('organisationId', e.target.value)}
-              />
-            </div>
-          )}
-          <div>
-            <FilterLabel htmlFor="f-from">Gefunden ab</FilterLabel>
-            <Input id="f-from" type="date" value={filters.foundFrom} max={filters.foundTo || undefined} onChange={(e) => setFilter('foundFrom', e.target.value)} />
-          </div>
-          <div>
-            <FilterLabel htmlFor="f-to">Gefunden bis</FilterLabel>
-            <Input id="f-to" type="date" value={filters.foundTo} min={filters.foundFrom || undefined} onChange={(e) => setFilter('foundTo', e.target.value)} />
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-stone-600">
-          <p aria-live="polite">
+
+        <div className="max-lg:hidden">{filterFields('inline')}</div>
+
+        <div className="flex items-center justify-between gap-2 text-sm text-stone-600">
+          <Button
+            variant="secondary"
+            size="sm"
+            className="lg:hidden"
+            icon={<SlidersHorizontal className="size-4" />}
+            onClick={() => setFilterSheetOpen(true)}
+            aria-label={detailFilterCount > 0 ? `Filter (${detailFilterCount} aktiv)` : 'Filter: Farbe, Fundstelle, Zeitraum'}
+          >
+            Filter
+            {detailFilterCount > 0 && <span className="rounded-full bg-brand-600 px-1.5 text-xs text-white">{detailFilterCount}</span>}
+          </Button>
+          <p aria-live="polite" className="mr-auto lg:mr-0">
             {catalog.isSuccess && (
               <>
-                <strong className="text-stone-900">{results.length + aiMatches.length}</strong>{' '}
-                {results.length + aiMatches.length === 1 ? 'Fundgegenstand' : 'Fundgegenstände'}
-                {aiMatches.length > 0 && <span className="text-brand-700"> · davon {aiMatches.length} von der KI ergänzt</span>}
-                {aiPending && <span className="text-brand-700"> · KI sucht weitere …</span>}
+                <strong className="text-stone-900">{resultCount}</strong> Treffer
+                {aiMatches.length > 0 && <span className="text-brand-700"> · {aiMatches.length} von der KI</span>}
+                {aiPending && <span className="text-brand-700"> · KI sucht …</span>}
               </>
             )}
           </p>
           {active && (
             <Button variant="ghost" size="sm" icon={<RotateCcw className="size-4" />} onClick={resetFilters}>
-              Filter zurücksetzen
+              <span className="max-sm:sr-only">Filter </span>zurücksetzen
             </Button>
           )}
         </div>
       </form>
+
+      <Sheet
+        open={filterSheetOpen}
+        onClose={() => setFilterSheetOpen(false)}
+        title="Filter"
+        footer={
+          <div className="flex gap-2">
+            {active && (
+              <Button variant="ghost" onClick={resetFilters}>
+                Zurücksetzen
+              </Button>
+            )}
+            <Button className="flex-1" onClick={() => setFilterSheetOpen(false)}>
+              {resultCount} Treffer anzeigen
+            </Button>
+          </div>
+        }
+      >
+        {filterFields('sheet')}
+      </Sheet>
 
       {catalog.isPending && (
         <div className={ITEM_GRID} role="status" aria-label="Fundgegenstände werden geladen">
@@ -264,6 +281,36 @@ export const CatalogBrowser = ({ organisationId }: CatalogBrowserProps) => {
     </div>
   )
 }
+
+interface FilterFieldsProps {
+  idPrefix: string
+  filters: CatalogFilters
+  setFilter: <K extends keyof CatalogFilters>(key: K, value: CatalogFilters[K]) => void
+  organisations?: { value: string; label: string }[]
+}
+
+const FilterFields = ({ idPrefix, filters, setFilter, organisations }: FilterFieldsProps) => (
+  <div className={cn('grid grid-cols-2 gap-4 lg:gap-3', organisations ? 'lg:grid-cols-4' : 'lg:grid-cols-3')}>
+    <div className="col-span-2 sm:col-span-1">
+      <FilterLabel htmlFor={`${idPrefix}-color`}>Farbe</FilterLabel>
+      <Select id={`${idPrefix}-color`} placeholder="Alle Farben" options={toOptions(COLOR_LABELS)} value={filters.color} onChange={(e) => setFilter('color', e.target.value as ItemColor | '')} />
+    </div>
+    {organisations && (
+      <div className="col-span-2 sm:col-span-1">
+        <FilterLabel htmlFor={`${idPrefix}-org`}>Fundstelle</FilterLabel>
+        <Select id={`${idPrefix}-org`} placeholder="Alle Fundstellen" options={organisations} value={filters.organisationId} onChange={(e) => setFilter('organisationId', e.target.value)} />
+      </div>
+    )}
+    <div>
+      <FilterLabel htmlFor={`${idPrefix}-from`}>Gefunden ab</FilterLabel>
+      <Input id={`${idPrefix}-from`} type="date" value={filters.foundFrom} max={filters.foundTo || undefined} onChange={(e) => setFilter('foundFrom', e.target.value)} />
+    </div>
+    <div>
+      <FilterLabel htmlFor={`${idPrefix}-to`}>Gefunden bis</FilterLabel>
+      <Input id={`${idPrefix}-to`} type="date" value={filters.foundTo} min={filters.foundFrom || undefined} onChange={(e) => setFilter('foundTo', e.target.value)} />
+    </div>
+  </div>
+)
 
 const AI_PREFERENCE_KEY = 'lostandfound:ai-search'
 

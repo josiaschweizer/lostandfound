@@ -5,6 +5,7 @@ import { RequestStatusBadge } from '@/components/items/StatusBadges'
 import { SimulatedEmailCard } from '@/components/items/SimulatedEmailCard'
 import { Alert, EmptyState, ErrorState, Spinner } from '@/components/ui/Feedback'
 import { CardSection, DefinitionList, PageHeader } from '@/components/ui/Layout'
+import { Disclosure } from '@/components/ui/Disclosure'
 import { useRequestStatus } from './queries'
 
 const STATUS_MESSAGES: Record<RequestStatus, { tone: 'info' | 'success' | 'error'; title: string; text: string }> = {
@@ -25,7 +26,7 @@ export const RequestStatusPage = () => {
 
   const message = STATUS_MESSAGES[data.status]
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="mx-auto max-w-3xl space-y-4 sm:space-y-6">
       <PageHeader eyebrow="Ihre Rückgabeanfrage" title={data.item.title} actions={<RequestStatusBadge status={data.status} />} />
       <Alert tone={message.tone} title={message.title}>
         {message.text}
@@ -55,13 +56,13 @@ export const RequestStatusPage = () => {
           ]}
         />
       </CardSection>
-      <CardSection title="Nachrichten" description="Diese Nachrichten erhalten Sie per E-Mail (sofern der Versand eingerichtet ist).">
+      <Disclosure title="Nachrichten" summary={`${data.emails.length} ${data.emails.length === 1 ? 'Nachricht' : 'Nachrichten'} per E-Mail`}>
         <div className="space-y-3">
           {data.emails.map((email) => (
             <SimulatedEmailCard key={email.id} email={email} />
           ))}
         </div>
-      </CardSection>
+      </Disclosure>
     </div>
   )
 }

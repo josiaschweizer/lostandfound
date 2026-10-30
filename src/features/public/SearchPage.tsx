@@ -3,7 +3,7 @@ import { CatalogBrowser } from './CatalogBrowser'
 
 export const SearchPage = () => (
   <>
-    <PageHeader title="Gegenstand suchen" description="Suche über alle Fundstellen. Mit dem Filter «Fundstelle» schränken Sie die Suche auf einen Ort ein. Ganze Sätze versteht die KI-Suche." />
+    <PageHeader title="Gegenstand suchen" description="Über alle Fundstellen – ohne Anmeldung." />
     <CatalogBrowser />
   </>
 )

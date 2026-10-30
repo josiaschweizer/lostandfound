@@ -6,7 +6,7 @@ export const Card = ({ className, children }: { className?: string; children: Re
 )
 
 export const CardSection = ({ title, description, children, className, actions }: { title?: string; description?: ReactNode; children: ReactNode; className?: string; actions?: ReactNode }) => (
-  <Card className={cn('p-5 sm:p-6', className)}>
+  <Card className={cn('p-4 sm:p-6', className)}>
     {(title || actions) && (
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
@@ -21,11 +21,11 @@ export const CardSection = ({ title, description, children, className, actions }
 )
 
 export const PageHeader = ({ title, description, actions, eyebrow }: { title: string; description?: ReactNode; actions?: ReactNode; eyebrow?: ReactNode }) => (
-  <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+  <div className="mb-5 flex flex-wrap items-end justify-between gap-3 sm:mb-6 sm:gap-4">
     <div className="min-w-0">
       {eyebrow && <div className="mb-1 text-sm text-stone-500">{eyebrow}</div>}
       <h1 className="text-2xl font-semibold tracking-tight text-stone-900 sm:text-3xl">{title}</h1>
-      {description && <p className="mt-1.5 max-w-2xl text-stone-600">{description}</p>}
+      {description && <p className="mt-1 max-w-2xl text-sm text-stone-600 sm:mt-1.5 sm:text-base">{description}</p>}
     </div>
     {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
   </div>
@@ -44,7 +44,7 @@ export const Badge = ({ tone = 'neutral', children, className }: { tone?: 'neutr
 }
 
 export const DefinitionList = ({ items }: { items: { label: string; value: ReactNode }[] }) => (
-  <dl className="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-[max-content_1fr]">
+  <dl className="grid grid-cols-[minmax(6rem,max-content)_1fr] gap-x-4 gap-y-2.5 text-sm sm:gap-x-6 sm:gap-y-3">
     {items.map(({ label, value }) => (
       <div key={label} className="contents">
         <dt className="text-stone-500">{label}</dt>

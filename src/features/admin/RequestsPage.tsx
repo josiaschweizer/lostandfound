@@ -24,15 +24,15 @@ export const RequestsPage = () => {
 
   return (
     <>
-      <PageHeader title="Rückgabeanfragen" description="Prüfen Sie den Eigentumsnachweis und bestätigen oder lehnen Sie Anfragen ab." />
-      <div className="mb-4 flex flex-wrap gap-1" role="tablist" aria-label="Nach Status filtern">
+      <PageHeader title="Rückgabeanfragen" description="Eigentumsnachweis prüfen, dann bestätigen oder ablehnen." />
+      <div className="scrollbar-none -mx-4 mb-4 flex gap-1 overflow-x-auto px-4 sm:mx-0 sm:px-0" role="tablist" aria-label="Nach Status filtern">
         {TABS.map((s) => (
           <button
             key={s}
             role="tab"
             aria-selected={tab === s}
             onClick={() => setTab(s)}
-            className={cn('rounded-lg px-3 py-1.5 text-sm font-medium', tab === s ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100')}
+            className={cn('shrink-0 rounded-lg px-3 py-2 text-sm font-medium whitespace-nowrap sm:py-1.5', tab === s ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100')}
           >
             {s === 'all' ? 'Alle' : REQUEST_STATUS_LABELS[s]} <span className="ml-1 opacity-70">{count(s)}</span>
           </button>
