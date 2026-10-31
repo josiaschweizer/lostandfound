@@ -17,7 +17,7 @@ end $$;
 
 -- ===== Anonym =====
 select pg_temp.as_user(null);
-select pg_temp.check((select count(*) from public.found_items) = 13, 'anon sieht nur öffentliche, nicht zurückgegebene Gegenstände (13)');
+select pg_temp.check((select count(*) from public.found_items) = 29, 'anon sieht nur öffentliche, nicht zurückgegebene Gegenstände (29)');
 select pg_temp.check(not exists (select 1 from public.found_items where status='returned' or not is_public), 'anon: keine zurückgegebenen/internen');
 select pg_temp.fails('select internal_note from public.found_item_internal', 'anon kann interne Angaben nicht lesen');
 select pg_temp.fails('select updated_at from public.found_items', 'anon kann nicht-öffentliche Spalten nicht lesen');
@@ -46,13 +46,13 @@ reset role;
 
 -- ===== Mitarbeitende Schule (Lea) =====
 select pg_temp.as_user('00000000-0000-4000-a000-000000000001');
-select pg_temp.check((select count(*) from public.found_items where organisation_id = public.current_organisation_id()) = 5, 'Lea sieht 5 eigene Gegenstände inkl. zurückgegebener');
-select pg_temp.check((select count(*) from public.found_item_internal) = 5, 'Lea sieht nur interne Angaben der eigenen Org');
+select pg_temp.check((select count(*) from public.found_items where organisation_id = public.current_organisation_id()) = 9, 'Lea sieht 9 eigene Gegenstände inkl. zurückgegebener');
+select pg_temp.check((select count(*) from public.found_item_internal) = 9, 'Lea sieht nur interne Angaben der eigenen Org');
 select pg_temp.check((select count(*) from public.found_items i join public.organisations o on o.id=i.organisation_id where o.short_code='NWL' and not i.is_public) = 0, 'Lea sieht interne (nicht öffentliche) Gegenstände anderer Orgs nicht');
 select pg_temp.check((select count(distinct organisation_id) from public.return_requests) = 1, 'Lea sieht nur Anfragen der eigenen Org');
 select pg_temp.check((select count(*) from public.return_requests) = 4, 'Lea sieht 4 Anfragen (3 Seed + 1 Test)');
 select pg_temp.check((select count(*) from public.loss_reports where organisation_id is not null and organisation_id <> public.current_organisation_id()) = 0, 'Lea sieht keine Meldungen anderer Orgs');
-select pg_temp.check((select count(*) from public.loss_reports where organisation_id is null) = 3, 'Lea sieht «weiss nicht»-Meldungen (3)');
+select pg_temp.check((select count(*) from public.loss_reports where organisation_id is null) = 4, 'Lea sieht «weiss nicht»-Meldungen (4)');
 select pg_temp.check((select count(*) from public.simulated_emails where organisation_id <> public.current_organisation_id()) = 0, 'Lea sieht nur eigenen Postausgang');
 
 with u as (update public.found_items set title='hack' where organisation_id <> public.current_organisation_id() returning 1)
@@ -64,7 +64,7 @@ select pg_temp.fails($$insert into public.found_item_internal (item_id, organisa
 -- Gegenstand erfassen → Fundnummer
 insert into public.found_items (organisation_id,title,category,color,found_on,found_location,public_description)
 values (public.current_organisation_id(),'Testjacke','clothing','red',current_date,'Aula','Rote Jacke');
-select pg_temp.check((select item_number from public.found_items where title='Testjacke') = 'BZS-' || to_char(current_date,'YYYY') || '-0006', 'Fundnummer fortlaufend: BZS-JJJJ-0006');
+select pg_temp.check((select item_number from public.found_items where title='Testjacke') = 'BZS-' || to_char(current_date,'YYYY') || '-0010', 'Fundnummer fortlaufend: BZS-JJJJ-0010');
 select pg_temp.fails($$update public.found_items set item_number='X' where title='Testjacke'$$, 'Fundnummer nicht änderbar (Spaltenrecht)');
 update public.found_items set title='Testjacke 2' where title='Testjacke';
 select pg_temp.check((select item_number from public.found_items where title='Testjacke 2') like 'BZS-%', 'Fundnummer unveränderlich');
@@ -140,12 +140,23 @@ reset role;
 select pg_temp.as_user(null);
 select public.reset_demo();
 reset role;
-select pg_temp.check((select count(*) from public.organisations) = 3, 'Reset: 3 Organisationen');
-select pg_temp.check((select count(*) from public.found_items) = 15, 'Reset: 15 Gegenstände');
-select pg_temp.check((select count(*) from public.return_requests) = 7, 'Reset: 7 Anfragen');
-select pg_temp.check((select count(*) from auth.users) = 3, 'Reset: neue Konten entfernt');
-select pg_temp.check((select count(*) from auth.identities) = 3, 'Reset: Identitäten vorhanden');
+select pg_temp.check((select count(*) from public.organisations) = 4, 'Reset: 4 Organisationen');
+select pg_temp.check((select count(*) from public.found_items) = 31, 'Reset: 31 Gegenstände');
+select pg_temp.check((select count(*) from public.return_requests) = 9, 'Reset: 9 Anfragen');
+select pg_temp.check((select count(*) from auth.users) = 4, 'Reset: neue Konten entfernt');
+select pg_temp.check((select count(*) from auth.identities) = 4, 'Reset: Identitäten vorhanden');
 select pg_temp.check((select extensions.crypt('demo1234', encrypted_password) = encrypted_password from auth.users where email='lea.brunner@bbz-seetal.example'), 'Demo-Passwort funktioniert');
+select pg_temp.check((select count(*) from public.found_items where photo_path like 'demo/%.webp') = 26, 'Reset: 26 Gegenstände mit Beispielbild, 5 ohne');
+select pg_temp.check((select count(*) from public.loss_reports) = 7, 'Reset: 7 Verlustmeldungen');
+select pg_temp.check(not exists (
+  select 1 from public.found_items a join public.found_items b
+    on a.organisation_id = b.organisation_id and a.found_on < b.found_on and a.item_number > b.item_number
+), 'Reset: Fundnummern steigen chronologisch');
+select pg_temp.check((select id from public.found_items where title = 'Kabellose Kopfhörer') = '00000000-0000-4000-c000-000000000001', 'Reset: feste IDs der Gegenstände');
+select pg_temp.as_user('00000000-0000-4000-a000-000000000004');
+select pg_temp.check((select count(*) from public.found_item_internal) = 6, 'Luca (Regionalverkehr) sieht nur eigene 6 internen Angaben');
+select pg_temp.check((select count(*) from public.return_requests) = 1, 'Luca sieht nur die eigene Anfrage');
+reset role;
 
 -- ===== E-Mail-Versand =====
 select pg_temp.check((select count(*) from net.calls) = 0, 'Ohne Konfiguration: kein Versand-Aufruf');
