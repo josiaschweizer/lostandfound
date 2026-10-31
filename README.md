@@ -54,7 +54,7 @@ pnpm dev                       # http://localhost:5173
 
 Unten rechts gibt es den Knopf **«Demo-Hilfe»** – lokal (`pnpm dev`) immer, auf der Online-Version erst nach einmaligem Aufruf mit `?demo=1` (z. B. `https://…/?demo=1`; `?demo=0` blendet sie wieder aus). Damit:
 
-- **Rolle wechseln:** «Öffentliche Ansicht» (Suchende) oder eine der drei Beispiel-Organisationen, mit einem Klick
+- **Rolle wechseln:** «Öffentliche Ansicht» (Suchende) oder eine der vier Beispiel-Organisationen, mit einem Klick
 - **Eigene Links öffnen:** Anfragen und Verlustmeldungen, die in diesem Browser gesendet wurden
 - **Demo zurücksetzen:** stellt die Beispieldaten wieder her und löscht neu registrierte Organisationen und Konten
 
@@ -63,8 +63,9 @@ Unten rechts gibt es den Knopf **«Demo-Hilfe»** – lokal (`pnpm dev`) immer, 
 | Berufsbildungszentrum Seetal | Schule | `lea.brunner@bbz-seetal.example` | `demo1234` |
 | Fundbüro Stadt Lindenau | Fundbüro | `marco.keller@lindenau.example` | `demo1234` |
 | Nordwind Logistik AG | Unternehmen | `sara.huber@nordwind-logistik.example` | `demo1234` |
+| Regionalverkehr Seetal | Unternehmen (ÖV) | `luca.ammann@regionalverkehr-seetal.example` | `demo1234` |
 
-Alle Personen, Organisationen und Adressen sind erfunden.
+Alle Personen, Organisationen und Adressen sind erfunden. Was in den Beispieldaten steckt (31 Gegenstände, alle Status, Anfragen, Verlustmeldungen) und welche Daten welche Nutzertest-Aufgabe abdecken, steht in [`docs/TESTDATEN.md`](docs/TESTDATEN.md).
 
 ---
 
@@ -175,7 +176,7 @@ Ohne Key funktioniert alles wie bisher, die KI-Knöpfe melden dann «Die KI ist 
 - **Suche** filtert im Browser. Das genügt für Demo-Datenmengen, aber nicht für tausende Gegenstände.
 - **Fotos** liegen in einem öffentlichen Storage-Bucket. Wer die URL kennt, kann das Bild ansehen, auch bei nicht öffentlichen Gegenständen. Beim Demo-Reset werden hochgeladene Fotos nicht gelöscht.
 - **Keine** Aufbewahrungsfristen, keine Übergabe-Quittung, keine Ausweisprüfung im System.
-- **Seed-Fotos:** Beispielgegenstände haben keine Fotos. Stattdessen erscheint eine Illustration der Kategorie.
+- **Bilder der Beispieldaten** sind gezeichnete Studiobilder (keine echten Fotos), erzeugt mit `scripts/demo-photos/generate.py` und als statische Dateien in `public/demo-photos/` abgelegt (`photo_path = demo/<datei>`). Fünf Beispielgegenstände haben bewusst kein Bild – dort erscheint die Illustration der Kategorie.
 
 ---
 
@@ -187,6 +188,10 @@ supabase/
   functions/       Edge Function send-email (Resend)
   seed.sql         ruft seed_demo_data() auf
 db-tests/          SQL-Tests (RLS, Workflow) gegen lokales Postgres
+scripts/
+  demo-photos/     Generator für die Bilder der Beispieldaten (einmalig, nicht Teil des Builds)
+public/
+  demo-photos/     Bilder der Beispieldaten
 src/
   domain/          reine Fachlogik + Typen (Abgleich, Filter, Statusregeln) – mit Vitest-Tests
   services/        Datenzugriff auf Supabase (einzige Stelle mit supabase-Aufrufen)

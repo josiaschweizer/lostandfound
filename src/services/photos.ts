@@ -1,11 +1,15 @@
+import { demoPhotoUrl, isDemoPhoto } from '@/lib/demoPhotos'
 import { supabase } from '@/lib/supabase'
 import { unwrap } from './errors'
 
 const BUCKET = 'item-photos'
 const MAX_EDGE = 1600
 
-export const photoUrl = (path: string | null): string | null =>
-  path ? supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl : null
+export const photoUrl = (path: string | null): string | null => {
+  if (!path) return null
+  if (isDemoPhoto(path)) return demoPhotoUrl(path)
+  return supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl
+}
 
 const downscale = async (file: File): Promise<Blob> => {
   const bitmap = await createImageBitmap(file)

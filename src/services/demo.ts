@@ -8,6 +8,7 @@ export const DEMO_ACCOUNTS = [
   { email: 'lea.brunner@bbz-seetal.example', name: 'Lea Brunner', organisation: 'Berufsbildungszentrum Seetal' },
   { email: 'marco.keller@lindenau.example', name: 'Marco Keller', organisation: 'Fundbüro Stadt Lindenau' },
   { email: 'sara.huber@nordwind-logistik.example', name: 'Sara Huber', organisation: 'Nordwind Logistik AG' },
+  { email: 'luca.ammann@regionalverkehr-seetal.example', name: 'Luca Ammann', organisation: 'Regionalverkehr Seetal' },
 ] as const
 
 /** Setzt alle Daten auf die Beispieldaten zurück und entfernt neu registrierte Konten. */
