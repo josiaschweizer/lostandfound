@@ -1,119 +1,92 @@
-import { useState } from 'react'
-import { NavLink, Outlet, useLocation } from 'react-router'
-import { ClipboardList, Inbox, Menu, Search, X } from 'lucide-react'
-import { useAuth } from '@/app/useAuth'
-import { useSavedLinks } from '@/app/useSavedLinks'
-import { AssistantWidget } from '@/features/assistant/AssistantWidget'
-import { ButtonLink } from '../ui/Button'
-import type { ButtonSize } from '../ui/buttonClasses'
-import { cn } from '../ui/cn'
+import { Link, NavLink, Outlet } from 'react-router'
+import { CircleHelp } from 'lucide-react'
+import { t } from '@/i18n/de-CH'
+import { cn } from '@/components/ui/cn'
 import { Logo } from './Logo'
+import { PUBLIC_NAV } from './navItems'
 
-const NAV_ITEMS = [
-  { to: '/suche', label: 'Gegenstand suchen', icon: Search },
-  { to: '/verlust-melden', label: 'Verlust melden', icon: ClipboardList },
-]
+/**
+ * Öffentlicher Rahmen: Kopfzeile mit drei Einstiegen und «Hilfe», auf Mobile eine untere Leiste
+ * mit Symbol und Beschriftung (kein Hamburger-Menü, KONZEPT 4). Der Verwaltungsbereich ist nur
+ * über den Footer-Link «Für Fundstellen» erreichbar.
+ */
+export const PublicLayout = () => (
+  <div className="flex min-h-dvh flex-col">
+    <header className="sticky top-0 z-40 border-b border-stone-200 bg-white/95 backdrop-blur">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4">
+        <Logo />
+        <nav aria-label={t.nav.main} className="hidden items-center gap-1 lg:flex">
+          {PUBLIC_NAV.map(({ to, label }) => (
+            <NavLink
+              key={to}
+              to={to}
+              className={({ isActive }) =>
+                cn(
+                  'flex min-h-11 items-center rounded-lg px-3 font-medium transition',
+                  isActive ? 'bg-brand-50 text-brand-800' : 'text-stone-700 hover:bg-stone-100',
+                )
+              }
+            >
+              {label}
+            </NavLink>
+          ))}
+        </nav>
+        <NavLink
+          to="/hilfe"
+          className={({ isActive }) =>
+            cn(
+              'flex min-h-11 items-center gap-1.5 rounded-lg px-3 font-medium transition',
+              isActive ? 'bg-brand-50 text-brand-800' : 'text-stone-700 hover:bg-stone-100',
+            )
+          }
+        >
+          <CircleHelp className="size-5" aria-hidden />
+          {t.nav.help}
+        </NavLink>
+      </div>
+    </header>
 
-export const PublicLayout = () => {
-  const { membership } = useAuth()
-  const savedLinks = useSavedLinks()
-  const { pathname } = useLocation()
-  const [menu, setMenu] = useState({ open: false, path: pathname })
-  // Menü schliesst sich bei jedem Seitenwechsel von selbst.
-  const menuOpen = menu.open && menu.path === pathname
-  const toggleMenu = () => setMenu({ open: !menuOpen, path: pathname })
+    <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-6 pb-8 lg:pt-10">
+      <Outlet />
+    </main>
 
-  const navItems = [
-    ...NAV_ITEMS,
-    ...(savedLinks.length > 0 ? [{ to: '/meine-anfragen', label: 'Meine Anfragen', icon: Inbox, count: savedLinks.length }] : []),
-  ]
+    <footer className="border-t border-stone-200 bg-white pb-(--bottom-nav)">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-6 text-sm text-stone-600">
+        <p>{t.footer.project}</p>
+        <nav aria-label={t.nav.forOffices} className="flex flex-wrap gap-x-4">
+          <Link to="/fundstellen" className="inline-flex min-h-11 items-center hover:text-stone-900 hover:underline">
+            {t.nav.offices}
+          </Link>
+          <Link to="/hilfe" className="inline-flex min-h-11 items-center hover:text-stone-900 hover:underline">
+            {t.nav.help}
+          </Link>
+          <Link to="/verwaltung" className="inline-flex min-h-11 items-center hover:text-stone-900 hover:underline">
+            {t.nav.forOffices}
+          </Link>
+        </nav>
+      </div>
+    </footer>
 
-  return (
-    <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-40 border-b border-stone-200 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 sm:h-16">
-          <Logo />
-
-          <nav className="hidden items-center gap-1 lg:flex" aria-label="Hauptnavigation">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={({ isActive }) =>
-                  cn('rounded-lg px-3 py-2 text-sm font-medium transition', isActive ? 'bg-stone-100 text-stone-900' : 'text-stone-600 hover:text-stone-900')
-                }
-              >
-                {item.label}
-                {'count' in item && <span className="ml-1.5 rounded-full bg-brand-600 px-1.5 text-xs text-white">{item.count}</span>}
-              </NavLink>
-            ))}
-          </nav>
-          <div className="hidden items-center gap-2 lg:flex">
-            <OrganisationActions isStaff={Boolean(membership)} />
-          </div>
-
-          <button
-            type="button"
-            className="-mr-2 rounded-lg p-2 lg:hidden"
-            aria-expanded={menuOpen}
-            aria-controls="mobile-menu"
-            aria-label={menuOpen ? 'Menü schliessen' : 'Menü öffnen'}
-            onClick={toggleMenu}
-          >
-            {menuOpen ? <X className="size-6" /> : <Menu className="size-6" />}
-          </button>
-        </div>
-
-        {menuOpen && (
-          <div id="mobile-menu" className="border-t border-stone-200 bg-white px-4 pt-2 pb-4 shadow-lg lg:hidden">
-            <nav aria-label="Hauptnavigation mobil">
-              <ul className="divide-y divide-stone-100">
-                {navItems.map(({ to, label, icon: Icon, ...rest }) => (
-                  <li key={to}>
-                    <NavLink to={to} className={({ isActive }) => cn('flex items-center gap-3 py-3.5 text-base font-medium', isActive && 'text-brand-700')}>
-                      <Icon className="size-5 text-stone-400" aria-hidden />
-                      <span className="flex-1">{label}</span>
-                      {'count' in rest && <span className="rounded-full bg-brand-600 px-2 text-xs text-white">{rest.count}</span>}
-                    </NavLink>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-            <p className="mt-4 mb-2 text-xs font-medium text-stone-500 uppercase">Für Fundstellen</p>
-            <div className="flex flex-col gap-2">
-              <OrganisationActions isStaff={Boolean(membership)} size="md" />
-            </div>
-          </div>
-        )}
-      </header>
-
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:py-10">
-        <Outlet />
-      </main>
-
-      {/* Unten Platz lassen für den Assistenten-Knopf in der Ecke */}
-      <footer className="border-t border-stone-200 bg-white">
-        <div className="mx-auto max-w-6xl px-4 pt-6 pb-24 text-sm text-stone-500 sm:pb-6">
-          Schulprototyp (Modul M241) · Beispieldaten sind erfunden · Bitte keine echten Personendaten eingeben.
-        </div>
-      </footer>
-      <AssistantWidget />
-    </div>
-  )
-}
-
-const OrganisationActions = ({ isStaff, size = 'sm' }: { isStaff: boolean; size?: ButtonSize }) =>
-  isStaff ? (
-    <ButtonLink to="/verwaltung" size={size}>
-      Zur Verwaltung
-    </ButtonLink>
-  ) : (
-    <>
-      <ButtonLink to="/anmelden" variant="secondary" size={size}>
-        Anmelden
-      </ButtonLink>
-      <ButtonLink to="/registrieren" size={size}>
-        Organisation registrieren
-      </ButtonLink>
-    </>
-  )
+    <nav
+      data-bottom-nav
+      aria-label={t.nav.main}
+      className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-3 border-t border-stone-200 bg-white pb-[env(safe-area-inset-bottom)] lg:hidden"
+    >
+      {PUBLIC_NAV.map(({ to, label, icon: Icon }) => (
+        <NavLink
+          key={to}
+          to={to}
+          className={({ isActive }) =>
+            cn(
+              'flex h-16 flex-col items-center justify-center gap-1 text-sm font-medium transition',
+              isActive ? 'text-brand-700' : 'text-stone-600 hover:text-stone-900',
+            )
+          }
+        >
+          <Icon className="size-6" aria-hidden />
+          {label}
+        </NavLink>
+      ))}
+    </nav>
+  </div>
+)

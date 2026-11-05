@@ -1,21 +1,20 @@
 {
-  "name": "lostandfound",
+  "name": "lostandfound-new",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "typecheck": "tsc -b",
-    "lint": "oxlint",
-    "test": "vitest run",
     "preview": "vite preview",
-    "db:link": "supabase link --project-ref hfwykjvplojbetwzpyvu",
-    "db:push": "supabase db push --include-seed",
+    "typecheck": "tsc -b",
+    "lint": "oxlint src e2e",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "db:check": "bash db-tests/run.sh",
+    "db:push": "supabase db push",
     "db:types": "supabase gen types typescript --linked --schema public > src/lib/database.types.ts",
-    "fn:deploy": "supabase functions deploy send-email",
-    "fn:deploy:ai": "supabase functions deploy ai",
-    "fn:test": "deno test supabase/functions/send-email/ supabase/functions/ai/"
+    "fn:deploy": "supabase functions deploy"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.2",
@@ -30,6 +29,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@playwright/test": "1.63.0",
     "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^24.19.2",
     "@types/react": "^19.3.0",

@@ -9,6 +9,8 @@ export default defineConfig({
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },
+  // Fester Port: Browser-Prüfung immer auf http://localhost:5173 (siehe docs/concept.md)
+  server: { port: 5173, strictPort: true },
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts'],
