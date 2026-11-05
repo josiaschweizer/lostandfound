@@ -1,4 +1,4 @@
-# lostandfound – Prototyp einer Lost-&-Found-Plattform
+# lostandfound v1 – Prototyp einer Lost-&-Found-Plattform
 
 Schulprojekt M241. Organisationen (Schulen, Fundbüros, Unternehmen) registrieren sich, verwalten ihre eigene Fundstelle und erfassen Fundgegenstände. Suchende finden Gegenstände ohne Konto, fragen eine Rückgabe an oder melden einen Verlust.
 
