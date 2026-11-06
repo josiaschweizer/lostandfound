@@ -10,19 +10,20 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 DB=${DB_CHECK_NAME:-lf_check}
+QUIET="-c client_min_messages=warning"
 PSQL=(psql -X -v ON_ERROR_STOP=1 -q)
 
 "${PSQL[@]}" -d postgres -c "drop database if exists $DB" -c "create database $DB" > /dev/null 2>&1
 PSQL+=(-d "$DB")
 
-"${PSQL[@]}" -f db-tests/stub.sql > /dev/null
+PGOPTIONS="$QUIET" "${PSQL[@]}" -f db-tests/stub.sql > /dev/null
 shopt -s nullglob
 for migration in supabase/migrations/*.sql; do
   # pg_net gibt es lokal nicht – das Schema «net» kommt aus stub.sql.
-  sed '/create extension if not exists pg_net/d' "$migration" | "${PSQL[@]}" -f - > /dev/null
+  sed '/create extension if not exists pg_net/d' "$migration" | PGOPTIONS="$QUIET" "${PSQL[@]}" -f - > /dev/null
 done
-"${PSQL[@]}" -f supabase/seed.sql > /dev/null
+PGOPTIONS="$QUIET" "${PSQL[@]}" -f supabase/seed.sql > /dev/null
 
-output=$("${PSQL[@]}" -f db-tests/tests.sql 2>&1) || { echo "$output" | grep -E "FAIL|ERROR" ; exit 1; }
+output=$("${PSQL[@]}" -f db-tests/tests.sql 2>&1) || { echo "$output" | grep -E "ok:|FAIL|ERROR" | sed 's/^.*NOTICE:  //'; exit 1; }
 echo "$output" | grep -E "ok:" | sed 's/^.*NOTICE:  //'
 echo "SQL-Checks: $(echo "$output" | grep -c 'ok:') bestanden"

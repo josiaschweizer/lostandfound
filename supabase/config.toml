@@ -2,7 +2,7 @@
 # https://supabase.com/docs/guides/local-development/cli/config
 # A string used to distinguish different Supabase projects on the same host. Defaults to the
 # working directory name when running `supabase init`.
-project_id = "lostandfound-new"
+project_id = "lostandfound"
 
 [api]
 enabled = true
@@ -421,5 +421,5 @@ verify_jwt = false
 
 [functions.ai]
 enabled = true
-# Öffentlich aufrufbar (Chat, Suche). Mitarbeitenden-Aufgaben prüft die Function selbst.
+# Öffentlich aufrufbar (Ausfüllhilfe ohne Konto). Ratenbegrenzung und Tageslimit prüft die Function selbst.
 verify_jwt = false

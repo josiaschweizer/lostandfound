@@ -281,3 +281,23 @@ Going live on the hosted project: `supabase db reset --linked` once (drops B's s
 **Q11 – Route for item detail.** Concept: `/fund/:fundnummer` (e.g. `/fund/BZS-2026-0042`). OK (readable, but numbers are guessable – only public items are shown there anyway)?
 
 **Q12 – Hosting.** Same Vercel project as B (re-pointed to `lostandfound-new/`) or a new one?
+
+### Answers (05.11.2026, implemented)
+
+| Q | Decision |
+| --- | --- |
+| Q1 | Hosted DB reset right away (`supabase db reset --linked`); B is no longer needed. |
+| Q2 | Non-public items are **not in the catalog at all**; only staff see them. |
+| Q3 | `reset_demo()` only for admins, button «Demo zurücksetzen» in the overview. E2E tests use the same function. |
+| Q4 | `.env.local` is created by Josia on the Mac. DeepSeek key only as Supabase secret `AI_API_KEY`. |
+| Q5 | B's 26 generated demo photos are reused (`public/demo-photos/`, `photo_path = 'demo/<file>'`), 20 items have a photo. |
+| Q6 | Opening hours: one text field. |
+| Q7 | 6 required fields in the item form. |
+| Q8 | `notify` is stored, checkbox hidden (S4 out of scope). |
+| Q9 | B's 8 categories plus «Ausweise & Karten» (`id_cards`). |
+| Q10 | Exactly the 16 colours from 6.3, up to 3 per item. |
+| Q11 | Route `/fund/:fundnummer`. |
+| Q12 | Same repo as B (`josiaschweizer/lostandfound`), `vercel.json` kept. |
+
+Implemented scope: Must M1–M10 and S1 (AI fill-in, edge function `ai` with providers `deepseek`/`openai`/`mock`).
+Presentation flow and known limits: [`UEBERGABE.md`](UEBERGABE.md).

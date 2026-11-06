@@ -1,5 +1,5 @@
 {
-  "name": "lostandfound-new",
+  "name": "lostandfound",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -14,7 +14,8 @@
     "db:check": "bash db-tests/run.sh",
     "db:push": "supabase db push",
     "db:types": "supabase gen types typescript --linked --schema public > src/lib/database.types.ts",
-    "fn:deploy": "supabase functions deploy"
+    "fn:deploy": "supabase functions deploy ai && supabase functions deploy send-email",
+    "fn:test": "deno test --allow-env --allow-net supabase/functions/"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.2",
@@ -29,6 +30,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@playwright/test": "1.63.0",
     "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^24.19.2",

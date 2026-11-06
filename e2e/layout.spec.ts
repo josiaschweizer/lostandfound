@@ -2,10 +2,10 @@ import { expect, hasHorizontalScroll, test } from './fixtures'
 
 const ENTRIES = ['Suchen', 'Verlust melden', 'Gefunden?']
 
-test.describe('Grundlayout (Etappe 1)', () => {
+test.describe('Grundlayout', () => {
   test('Startseite lädt und zeigt die drei Einstiege', async ({ page }, testInfo) => {
     await page.goto('/')
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Verloren? Vielleicht schon gefunden.')
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Etwas verloren?')
 
     const mobile = testInfo.project.name === 'mobile-360'
     const bottomNav = page.locator('[data-bottom-nav]')
@@ -52,10 +52,5 @@ test.describe('Grundlayout (Etappe 1)', () => {
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Verlust melden')
     await nav.getByRole('link', { name: 'Gefunden?' }).click()
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Ich habe etwas gefunden')
-  })
-
-  test('Datenbankverbindung wird angezeigt (Entwicklung)', async ({ page }) => {
-    await page.goto('/')
-    await expect(page.getByTestId('db-status')).toContainText('verbunden · 4 Fundstellen')
   })
 })

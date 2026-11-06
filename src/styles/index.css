@@ -30,10 +30,14 @@
   /* Höhe der unteren Navigationsleiste auf Mobile – Inhalte rechnen damit, damit nichts verdeckt wird. */
   :root {
     --bottom-nav: 0px;
+    --sticky-bar: 0px;
   }
   @media (width < 64rem) {
     body:has([data-bottom-nav]) {
       --bottom-nav: calc(4rem + env(safe-area-inset-bottom));
+    }
+    body:has([data-sticky-bar]) {
+      --sticky-bar: 4.75rem;
     }
   }
 

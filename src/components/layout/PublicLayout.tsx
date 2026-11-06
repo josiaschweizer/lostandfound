@@ -46,7 +46,7 @@ export const PublicLayout = () => (
       </div>
     </header>
 
-    <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-6 pb-8 lg:pt-10">
+    <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-6 pb-10 lg:pt-10">
       <Outlet />
     </main>
 
@@ -56,6 +56,9 @@ export const PublicLayout = () => (
         <nav aria-label={t.nav.forOffices} className="flex flex-wrap gap-x-4">
           <Link to="/fundstellen" className="inline-flex min-h-11 items-center hover:text-stone-900 hover:underline">
             {t.nav.offices}
+          </Link>
+          <Link to="/meine-meldungen" className="inline-flex min-h-11 items-center hover:text-stone-900 hover:underline">
+            {t.nav.myReports}
           </Link>
           <Link to="/hilfe" className="inline-flex min-h-11 items-center hover:text-stone-900 hover:underline">
             {t.nav.help}

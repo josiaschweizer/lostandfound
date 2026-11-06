@@ -1,2 +1,2 @@
--- Demo-Daten werden ab Etappe 2 über seed_demo_data() eingespielt.
-select 1;
+-- Demo-Daten (alle erfunden). Wird bei «supabase db reset» automatisch ausgeführt.
+select public.seed_demo_data();

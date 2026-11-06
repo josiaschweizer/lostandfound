@@ -11,18 +11,18 @@ const VARIANTS: Record<ButtonVariant, string> = {
   success: 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm',
 }
 
+/** Tippflächen mind. 44 × 44 px (KONZEPT 9.2). */
 const SIZES: Record<ButtonSize, string> = {
-  sm: 'h-8 px-3 text-sm gap-1.5',
-  md: 'h-10 px-4 text-sm gap-2',
-  lg: 'h-12 px-5 text-base gap-2',
+  sm: 'min-h-11 px-3 text-sm gap-1.5',
+  md: 'min-h-11 px-4 text-base gap-2',
+  lg: 'min-h-12 px-5 text-base gap-2',
 }
 
 export const buttonClasses = (variant: ButtonVariant = 'primary', size: ButtonSize = 'md', className?: string) =>
   cn(
-    'inline-flex items-center justify-center rounded-lg font-medium transition-colors whitespace-nowrap',
+    'inline-flex items-center justify-center rounded-xl font-medium transition-colors text-center',
     'disabled:cursor-not-allowed disabled:opacity-60',
     VARIANTS[variant],
     SIZES[size],
     className,
   )
-
