@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/queryKeys'
 import {
-  getItemHistory, getLossReport, getMatchCounts, getStaffItem, listClaims, listLossReports, listOutbox, listStaffItems,
+  getAiStats, getItemHistory, getLossReport, getMatchCounts, getStaffItem, listClaims, listLossReports, listOutbox, listStaffItems,
   listStaffMembers, matchForItem, matchForLoss,
 } from '@/services/staff'
 
@@ -16,3 +16,4 @@ export const useLossMatches = (id: string) => useQuery({ queryKey: queryKeys.los
 export const useClaims = () => useQuery({ queryKey: queryKeys.claims, queryFn: listClaims })
 export const useOutbox = () => useQuery({ queryKey: queryKeys.outbox, queryFn: listOutbox })
 export const useMembers = () => useQuery({ queryKey: queryKeys.members, queryFn: listStaffMembers, staleTime: 5 * 60_000 })
+export const useAiStats = () => useQuery({ queryKey: queryKeys.aiStats, queryFn: getAiStats })

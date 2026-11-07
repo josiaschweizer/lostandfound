@@ -287,7 +287,9 @@ begin
     (2, null,      'Schwarzer Rucksack', 'bags',        '{black}', 'Fjällräven', 6, 'Tierpark oder im Bus',     'Rucksack mit Laptopfach.',                    'Jonas Graf',   'jonas.graf@example.com',   5),
     (3, o_culture, 'Blaue Winterjacke',  'clothing',    '{blue}',  null,         5, 'Saal, nach der Vorstellung','Daunenjacke mit Kapuze.',                    'Sven Imhof',   'sven.imhof@example.com',   4),
     (4, null,      'Schwarze Kopfhörer', 'electronics', '{black}', null,         3, 'Weiss nicht',              'Over-Ear-Kopfhörer.',                         null,           'kim.berger@example.com',   2),
-    (5, o_zoo,     'Blaue Brille',       'other',       '{blue}',  null,         2, 'Beim Affenhaus',           'Brille mit blauem Gestell.',                  'Anna Graf',    'anna.graf@example.com',    1);
+    (5, o_zoo,     'Blaue Brille',       'other',       '{blue}',  null,         2, 'Beim Affenhaus',           'Brille mit blauem Gestell.',                  'Anna Graf',    'anna.graf@example.com',    1),
+    -- Testfall KI (7.4): andere Kategorie und andere Wörter als der Fund «Turnbeutel» – die Regeln finden ihn nicht
+    (6, o_school,  'Blauer Turnsack',    'sports',      '{blue}',  null,         6, 'Turnhalle',                'Sportsack mit Kordeln, Hallenschuhe drin.',   'Mia Brunner',  'mia.brunner@example.com',  5);
 
   for r in select * from demo_reports order by nr loop
     v_token := public.new_token();

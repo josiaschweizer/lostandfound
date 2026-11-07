@@ -17,11 +17,20 @@ export const buildBody = (config: OpenAiConfig, req: CompleteRequest): Record<st
   model: config.model,
   messages: [
     { role: 'system', content: req.system },
-    { role: 'user', content: req.user },
+    {
+      role: 'user',
+      content: req.image
+        ? [
+            { type: 'text', text: req.user },
+            { type: 'image_url', image_url: { url: req.image, detail: 'low' } },
+          ]
+        : req.user,
+    },
   ],
   max_tokens: req.maxTokens ?? 600,
   temperature: 0,
-  ...(req.json ? { response_format: { type: 'json_object' } } : {}),
+  // Mit Bild ohne JSON-Modus (nicht bei allen Bildmodellen unterstützt); der Prompt verlangt JSON, parseJsonObject liest es aus.
+  ...(req.json && !req.image ? { response_format: { type: 'json_object' } } : {}),
   ...providerExtras(config.baseUrl),
 })
 
@@ -50,6 +59,7 @@ export const createOpenAiProvider = (config: OpenAiConfig, fetchFn: typeof fetch
       if (res.status === 401) throw new AiError('Der KI-Schlüssel ist ungültig (AI_API_KEY prüfen).', 503)
       if (res.status === 402) throw new AiError('Das Guthaben beim KI-Anbieter ist aufgebraucht.', 503)
       if (res.status === 429) throw new AiError('Der KI-Dienst ist gerade ausgelastet.', 429)
+      if (req.image && (res.status === 400 || res.status === 422)) throw new AiError('Das KI-Modell kann dieses Foto nicht auswerten (AI_MODEL prüfen).', 422)
       throw new AiError(`KI-Anbieter meldet Fehler ${res.status}.`)
     }
     return {

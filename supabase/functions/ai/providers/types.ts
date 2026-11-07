@@ -8,6 +8,8 @@ export interface CompleteRequest {
   maxTokens?: number
   /** Nur für den Mock: welche Aktion gerade läuft, damit er passend antworten kann. */
   action: string
+  /** Bild als data-URL (data:image/jpeg;base64,…) – nur mit einem Bildmodell. */
+  image?: string
 }
 
 export interface CompleteResult {

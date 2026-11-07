@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { reasonLabels } from './reasons'
+import { isAiReason, reasonLabels } from './reasons'
 
 describe('Begründungen', () => {
   it('zeigt höchstens 3 Chips in Alltagssprache, stärkste zuerst', () => {
@@ -16,5 +16,11 @@ describe('Begründungen', () => {
 
   it('ignoriert unbekannte Kürzel', () => {
     expect(reasonLabels(['unbekannt'])).toEqual([])
+  })
+
+  it('zeigt die Begründung der KI zuerst und erkennt KI-Treffer', () => {
+    expect(reasonLabels(['farbe_gleich', 'ki:Gleiches Etui, Farbe passt'])).toEqual(['Gleiches Etui, Farbe passt', 'Farbe stimmt'])
+    expect(isAiReason(['ki:x'])).toBe(true)
+    expect(isAiReason(['farbe_gleich'])).toBe(false)
   })
 })

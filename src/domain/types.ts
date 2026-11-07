@@ -57,6 +57,8 @@ export interface MatchItem extends Omit<PublicItem, 'createdAt'> {
   score?: number
   isPublic?: boolean
   notifiedAt?: string | null
+  /** 'ki' = Vorschlag der KI (semantic_match), sonst Regel-Treffer */
+  source?: 'regel' | 'ki'
 }
 
 export interface StaffItem extends PublicItem {

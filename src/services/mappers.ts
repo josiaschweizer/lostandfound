@@ -73,6 +73,7 @@ export const toMatchItem = (row: Row): MatchItem => ({
   score: row.score as number | undefined,
   isPublic: row.isPublic as boolean | undefined,
   notifiedAt: (row.notifiedAt ?? null) as string | null,
+  source: row.source === 'ki' ? 'ki' : 'regel',
 })
 
 export const toLossReport = (row: Row): LossReport => ({

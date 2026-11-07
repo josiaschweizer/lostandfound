@@ -86,6 +86,7 @@ export interface ReportMatch {
   score: number
   reasons: string[]
   notifiedAt: string | null
+  source: 'regel' | 'ki'
 }
 
 export const matchForItem = async (id: string): Promise<ReportMatch[]> =>
@@ -161,3 +162,12 @@ export const updateOfficeProfile = async (input: OfficeProfileInput): Promise<vo
 export const resetDemo = async (): Promise<void> => {
   unwrap(await supabase.rpc('reset_demo'))
 }
+
+export interface AiStats {
+  /** KI-Treffer im eigenen Bestand (30 Tage), die die Regeln nicht gefunden hätten */
+  kiOnlyMatches: number
+  /** Mit KI ausgefüllte Formulare der Fundstelle (30 Tage) */
+  assistedForms: number
+}
+
+export const getAiStats = async (): Promise<AiStats> => unwrap(await supabase.rpc('ai_stats')) as AiStats

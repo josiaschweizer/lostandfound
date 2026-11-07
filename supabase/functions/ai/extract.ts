@@ -99,3 +99,42 @@ export const readExtractInput = (body: Record<string, unknown>): { text: string;
   const context = body.context === 'fund' ? 'fund' : 'verlust'
   return { text, context }
 }
+
+// ---------------------------------------------------------------------------
+// Foto-Vorschlag `photo_suggest` (KONZEPT 7.5, C1): gleiches Antwort-Schema wie die Ausfüllhilfe.
+// ---------------------------------------------------------------------------
+export const SYSTEM_PHOTO = `Du hilfst einer Fundstelle, einen gefundenen Gegenstand zu erfassen. Du siehst ein Foto davon.
+Gib NUR JSON nach dem Schema zurück.
+Regeln:
+- Beschreibe nur, was klar zu sehen ist. Erfinde nichts; Unklares ist null.
+- kategorie und farben nur aus den erlaubten Werten, höchstens 3 Farben, die wichtigste zuerst.
+- marke nur, wenn ein Logo oder Schriftzug eindeutig lesbar ist.
+- titel: kurz, 1-4 Wörter, Deutsch (Schweiz), ohne ß. beschreibung: ein Satz mit allgemein sichtbaren Eigenschaften.
+- Schreibe NIE Namen, Nummern, Adressen oder Texte von Ausweisen, Karten oder Etiketten ab und beschreibe keine Personen.
+- ort, datum_von und datum_bis sind immer null.
+- Felder, bei denen du nicht sicher bist, kommen in "unsicher".
+
+Schema:
+{"titel": "string|null", "kategorie": "<erlaubter Wert>|null", "farben": ["<erlaubter Wert>"], "marke": "string|null",
+ "beschreibung": "string|null", "ort": null, "datum_von": null, "datum_bis": null, "unsicher": ["feldname"]}`
+
+export const buildPhotoMessage = (): string =>
+  [`Erlaubte Kategorien: ${describeEnum(CATEGORIES)}`, `Erlaubte Farben: ${describeEnum(COLORS)}`, 'Das Foto des Gegenstands ist angehängt.'].join('\n')
+
+/** Max. ca. 1,5 MB als data-URL; das Frontend verkleinert vorher auf 768 px. */
+export const MAX_IMAGE_CHARS = 2_000_000
+
+export const readImage = (body: Record<string, unknown>): string | { error: string } => {
+  const image = typeof body.image === 'string' ? body.image : ''
+  if (!/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(image)) return { error: 'Bitte ein Foto (JPEG, PNG oder WebP) senden.' }
+  if (image.length > MAX_IMAGE_CHARS) return { error: 'Das Foto ist zu gross.' }
+  return image
+}
+
+/** Ein Foto liefert keinen Ort und kein Datum; eine Ausweis-Kategorie wird nie automatisch veröffentlicht (Frontend). */
+export const cleanPhoto = (raw: unknown, today: string): ExtractedFields => ({
+  ...cleanExtraction(raw, today),
+  ort: null,
+  datum_von: null,
+  datum_bis: null,
+})

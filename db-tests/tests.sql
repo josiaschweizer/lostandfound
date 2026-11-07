@@ -40,7 +40,7 @@ select pg_temp.check((select count(*) from public.found_items) = 40, 'Seed: 40 F
 select pg_temp.check((select count(*) from public.found_item_internal) = 40, 'Seed: interne Angaben zu allen Funden');
 select pg_temp.check((select count(*) from public.memberships where role = 'admin') = 4
                  and (select count(*) from public.memberships where role = 'staff') = 4, 'Seed: je ein Admin und eine Person Mitarbeitende pro Fundstelle');
-select pg_temp.check((select count(*) from public.loss_reports) = 5, 'Seed: 5 Verlustmeldungen');
+select pg_temp.check((select count(*) from public.loss_reports) = 6, 'Seed: 6 Verlustmeldungen');
 select pg_temp.check((select count(distinct status) from public.return_requests) = 4, 'Seed: Anfragen in allen Status');
 select pg_temp.check((select item_number from public.found_items where title = 'Kabellose Ohrhörer') ~ '^BSM-\d{4}-\d{4}$', 'Fundnummer im Format KÜRZEL-JJJJ-NNNN');
 select pg_temp.check(not exists (select 1 from public.found_item_internal where trim(storage_location) = ''), 'Aufbewahrungsort ist bei allen Funden gesetzt');
@@ -294,9 +294,86 @@ select pg_temp.check(public.ai_allow('k2', 10, 300, 1) = 'daily', 'KI: Tageslimi
 select pg_temp.check(not exists (select 1 from information_schema.columns where table_name = 'ai_calls' and column_name in ('input', 'prompt', 'text', 'content')),
   'KI-Protokoll speichert keine Inhalte');
 
+-- ===== KI im Hintergrund (semantische Treffer, Such-Erweiterung) =====
+select pg_temp.as_admin();
+create temporary table t_ai as
+select l.id as loss_id,
+       (select substring(e.link_path from 10) from public.simulated_emails e where e.loss_report_id = l.id and e.link_path like '/verlust/%' limit 1) as token,
+       (select id from public.found_items where title = 'Stockschirm') as umbrella,
+       (select id from public.found_items where title = 'Schlüsselbund' and organisation_id = l.organisation_id) as keys,
+       (select id from public.found_items where title = 'Smartphone mit Hülle') as zoo_phone
+  from public.loss_reports l where l.title = 'Weisse AirPods';
+grant select on t_ai to anon, authenticated;
+
+select pg_temp.check((public.ai_loss_context((select token from t_ai)) -> 'loss' ->> 'titel') = 'Weisse AirPods'
+                 and jsonb_array_length(public.ai_loss_context((select token from t_ai)) -> 'candidates') between 1 and 30,
+  'KI-Kontext über den persönlichen Link: Meldung und bis zu 30 Kandidaten');
+select pg_temp.check(public.ai_loss_context((select token from t_ai))::text !~ '@'
+                 and public.ai_loss_context((select token from t_ai))::text !~* 'Gravur',
+  'KI-Kontext enthält keine Kontaktdaten und keine internen Merkmale');
+select pg_temp.check(public.ai_loss_context(null, (select loss_id from t_ai), '00000000-0000-4000-b000-000000000002') is null,
+  'KI-Kontext: fremde Fundstelle bekommt die Meldung nicht');
+select pg_temp.check(public.ai_item_context((select zoo_phone from t_ai), '00000000-0000-4000-b000-000000000001') is null,
+  'KI-Kontext: Fund einer anderen Fundstelle wird nicht geliefert');
+select pg_temp.check(public.ai_loss_context('falsch') is null, 'KI-Kontext: falscher Link liefert nichts');
+
+select pg_temp.as_user(null);
+select pg_temp.fails($$select public.ai_loss_context((select token from t_ai))$$, 'anon darf den KI-Kontext nicht lesen');
+select pg_temp.fails($$select public.ai_store_matches('[]')$$, 'anon darf keine KI-Treffer speichern');
+select pg_temp.as_admin();
+
+select pg_temp.check(public.ai_store_matches(jsonb_build_array(
+  jsonb_build_object('lossId', (select loss_id from t_ai), 'itemId', (select umbrella from t_ai), 'score', 75, 'reason', 'Testbegründung'),
+  jsonb_build_object('lossId', (select loss_id from t_ai), 'itemId', (select keys from t_ai), 'score', 50, 'reason', 'Nur intern'),
+  jsonb_build_object('lossId', gen_random_uuid(), 'itemId', (select keys from t_ai), 'score', 90, 'reason', 'unbekannt'))) = 2,
+  'KI-Treffer speichern (unbekannte IDs werden verworfen)');
+
+select pg_temp.as_user(null);
+select pg_temp.check(exists (select 1 from jsonb_array_elements(public.get_my_loss((select token from t_ai)) -> 'matches') m
+                              where m ->> 'id' = (select umbrella::text from t_ai) and m ->> 'source' = 'ki'
+                                and m -> 'reasons' ->> 0 = 'ki:Testbegründung'),
+  'Suchende sehen KI-Treffer ab 60 mit Begründung');
+select pg_temp.check(not exists (select 1 from jsonb_array_elements(public.get_my_loss((select token from t_ai)) -> 'matches') m
+                                  where m ->> 'id' = (select keys::text from t_ai)),
+  'KI-Treffer unter 60 sehen Suchende nicht');
+select pg_temp.check(jsonb_array_length(public.get_my_loss((select token from t_ai)) -> 'matches') <= 5, 'Insgesamt höchstens 5 Treffer');
+
+select pg_temp.as_user(:u_bsm_staff);
+select pg_temp.check(exists (select 1 from jsonb_array_elements(public.match_for_loss((select loss_id from t_ai))) m
+                              where m ->> 'id' = (select keys::text from t_ai) and m ->> 'source' = 'ki'),
+  'Fundstelle sieht KI-Treffer ab 40');
+select pg_temp.check(exists (select 1 from jsonb_array_elements(public.match_for_item((select umbrella from t_ai))) m
+                              where m ->> 'reportId' = (select loss_id::text from t_ai) and m ->> 'source' = 'ki'),
+  'Fund-Detail zeigt die passende Meldung aus der KI');
+select pg_temp.check((public.staff_match_counts() -> 'items' ->> (select umbrella::text from t_ai))::int >= 1, 'Badge zählt KI-Treffer mit');
+select pg_temp.check((public.ai_stats() ->> 'kiOnlyMatches')::int = 2, 'Kennzahl: Treffer nur dank KI');
+select pg_temp.as_user(:u_tps_staff);
+select pg_temp.check((public.ai_stats() ->> 'kiOnlyMatches')::int = 0, 'Kennzahl: andere Fundstelle zählt nicht mit');
+select pg_temp.as_admin();
+
+select public.ai_put_expansion('Musik Ding', array['Kopfhörer', 'Ohrhörer'], 'electronics');
+select pg_temp.check(public.ai_get_expansion('musik ding') = '{"terms": ["Kopfhörer", "Ohrhörer"], "category": "electronics"}'::jsonb,
+  'Such-Erweiterung wird zwischengespeichert');
+update public.query_expansions set created_at = now() - interval '8 days';
+select pg_temp.check(public.ai_get_expansion('musik ding') is null, 'Such-Erweiterung verfällt nach 7 Tagen');
+select public.ai_put_expansion('xy', array['a'], 'waffen');
+select pg_temp.check((select category from public.query_expansions where term = 'xy') is null, 'Unbekannte Kategorie wird verworfen');
+
 -- ===== Datenschutz =====
 update public.loss_reports set status = 'closed', closed_at = now() - interval '100 days' where title = 'Blaue Brille';
 select pg_temp.check(public.purge_old_contacts() >= 1, 'purge_old_contacts bereinigt alte Einträge');
 select pg_temp.check((select reporter_email from public.loss_reports where title = 'Blaue Brille') = 'geloescht@example.invalid'
                  and (select reporter_email from public.loss_reports where title = 'Weisse AirPods') <> 'geloescht@example.invalid',
   'Kontaktdaten werden 90 Tage nach Abschluss gelöscht, offene Meldungen bleiben');
+
+-- ===== Testfall KI 7.4: Regeln finden den Turnbeutel zur Meldung «Blauer Turnsack» nicht =====
+select pg_temp.check(not exists (
+  select 1 from public.loss_reports r cross join lateral public.match_items(r.organisation_id, r.title, r.category, r.colors, r.brand,
+         r.description, r.lost_location, r.lost_from, r.lost_to, false, 1, 50) m
+   where r.title = 'Blauer Turnsack' and m.item_id = (select id from public.found_items where title = 'Turnbeutel')),
+  'Testfall KI: Regel-Matching findet den Turnbeutel nicht (andere Kategorie)');
+select pg_temp.check(exists (
+  select 1 from jsonb_array_elements(public.ai_loss_context(null, (select id from public.loss_reports where title = 'Blauer Turnsack'),
+                                     '00000000-0000-4000-b000-000000000001') -> 'candidates') c
+   where c ->> 'titel' = 'Turnbeutel'),
+  'Testfall KI: Turnbeutel ist Kandidat für die KI (Kategorie nicht erforderlich)');

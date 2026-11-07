@@ -1,15 +1,16 @@
 # Übergabe und Präsentation
 
-Stand: 05.11.2026 · Umfang: Must M1–M10 und S1 (KI-Ausfüllhilfe) aus [`KONZEPT_M245.md`](KONZEPT_M245.md).
+Stand: 06.11.2026 · Umfang: Must M1–M10, S1 (KI-Ausfüllhilfe), S2 (KI-Treffer), S3 (KI-Suche) und C1 (Foto-Vorschlag) aus [`KONZEPT_M245.md`](KONZEPT_M245.md).
 
 ## Vor der Präsentation (Checkliste)
 
 1. **Supabase aufwecken:** Gratis-Projekte pausieren nach einigen Tagen ohne Zugriff. Am Vortag im Dashboard prüfen und die App einmal öffnen.
 2. `pnpm dev` starten → http://localhost:5173 (oder die gehostete URL).
 3. Als Admin anmelden (unten) → **Übersicht → «Demo zurücksetzen»**. Danach sind alle Beispieldaten frisch.
-4. KI prüfen: Auf «Verlust melden» erscheint das Feld «In eigenen Worten beschreiben». Fehlt es, ist die KI aus
-   (kein `AI_API_KEY`). Notlösung ohne Schlüssel: `supabase secrets set AI_PROVIDER=mock` – der Mock versteht
-   einfache Sätze wie im Ablauf unten.
+4. KI prüfen: Auf «Verlust melden» erscheint das Feld «In eigenen Worten beschreiben», beim Fund-Erfassen der Satz
+   «Mit Foto schlägt die KI … vor». Fehlt beides, ist die KI aus (kein `AI_API_KEY`). Einmal durchspielen – die erste Antwort dauert manchmal ein paar Sekunden.
+   Notlösung ohne Schlüssel: `supabase secrets set AI_PROVIDER=mock`. Der Mock arbeitet mit einfachen Regeln
+   (Foto → immer «Rucksack») und ist für Tests gedacht – für die Präsentation die echten Schlüssel verwenden.
 5. Zwei Browserfenster vorbereiten: links **Handy-Ansicht** (DevTools → 360 px) für Suchende, rechts **Desktop** für die Fundstelle.
 
 ## Demo-Zugänge (Passwort für alle: `demo1234`)
@@ -25,7 +26,7 @@ Auf der Anmeldeseite gibt es dafür Knöpfe – Eintippen ist nicht nötig. Erre
 
 Admins können zusätzlich das Fundstellen-Profil bearbeiten und die Demo zurücksetzen.
 
-## Ablauf «Höhle der Löwen» (ca. 6 Minuten)
+## Ablauf «Höhle der Löwen» (ca. 7 Minuten)
 
 **1 · Das Problem (30 s).** «Jede Schule hat eine Fundkiste. Niemand schaut hinein, nach drei Monaten wird alles entsorgt.
 Wer etwas sucht, muss vorbeigehen oder anrufen – und weiss nicht einmal, ob es abgegeben wurde.»
@@ -33,6 +34,7 @@ Wer etwas sucht, muss vorbeigehen oder anrufen – und weiss nicht einmal, ob es
 **2 · Suchen ohne Konto (60 s) – Handy-Ansicht.**
 - Startseite: drei klare Einstiege, keine Anmeldung, kein Menü-Suchen.
 - Suchfeld: `airpods` → unter «Ähnliche Gegenstände – auch gesucht nach: Kopfhörer, Ohrhörer …» erscheinen die «Kabellose Ohrhörer», obwohl das Wort nirgends steht (Synonyme).
+- **KI-Suche:** `Ding für Musik` → die normale Suche findet nichts, die KI ergänzt «Kopfhörer, Ohrhörer …» und zeigt die Treffer mit «Vorschlag mit KI». So sucht man, wenn man das richtige Wort nicht kennt.
 - Filter zeigen: Farbe «Weiss», Zeitraum «Letzte 7 Tage». Alles bleibt in der URL, der Link ist teilbar.
 - Fund öffnen: Foto, Fundort, **wo und wann abholen**. Interne Merkmale sind nicht sichtbar.
 
@@ -51,16 +53,23 @@ Wer etwas sucht, muss vorbeigehen oder anrufen – und weiss nicht einmal, ob es
 - «Verlust melden» → Feld «In eigenen Worten beschreiben»: `hab gestern meine schwarzen airpods im bus 5 verloren`
 - «Felder ausfüllen lassen» → Titel, Kategorie, Farbe, Marke, Ort, Datum sind gesetzt und markiert («bitte prüfen»).
 - Ab Schritt 2 erscheinen **mögliche Treffer** mit Begründung («Farbe stimmt», «Zeitlich nah»).
-- Absenden → persönlicher Link mit Treffern; die Meldung lässt sich dort auch wieder schliessen.
+- Absenden → persönlicher Link mit Treffern. Darunter: «Die KI sucht nach weiteren passenden Funden …» – KI-Treffer kommen ohne Knopf dazu.
 
-**6 · Fund erfassen in 30 Sekunden (45 s) – Desktop.**
-- «Fund erfassen»: `AirPods` · Elektronik · Weiss · Fundort `Bus Linie 5` · Aufbewahrungsort `Schrank A` → Speichern.
-- Sofort: «1 passende Verlustmeldung» (Lina Kunz hatte weisse AirPods gemeldet) → «Suchende Person benachrichtigen» → Postausgang.
-- In der Fundliste steht der neue Fund zuoberst; «Abgeholt» geht mit einem Klick, «Rückgängig» ebenso.
+**6 · Fund erfassen per Foto (45 s) – Handy oder Desktop.**
+- «Fund erfassen» → «Foto aufnehmen oder wählen» (z. B. einen Rucksack oder eine Jacke fotografieren).
+- Die KI füllt Titel, Kategorie, Farbe und Beschreibung vor («bitte prüfen»). Nur noch Fundort und Aufbewahrungsort ergänzen → Speichern.
+- Sofort: passende Verlustmeldungen; die KI prüft im Hintergrund weitere. «Suchende Person benachrichtigen» → Postausgang.
+- Sicherheit: Erkennt die KI einen Ausweis, schaltet sie «Öffentlich sichtbar» aus.
 
-**7 · Abschluss (30 s).** Mandantenfähig (jede Fundstelle sieht nur ihre Daten), Datenschutz eingebaut
-(Merkmale bleiben intern, Kontaktdaten werden 90 Tage nach Abschluss gelöscht, an die KI gehen nie Kontaktdaten),
-funktioniert ohne KI und auf jedem Handy.
+**7 · Was Regeln nicht finden (45 s) – Desktop.**
+- «Meldungen» → **«Blauer Turnsack»** (Kategorie Sport, Wörter «Turnsack», «Hallenschuhe»). Die Regeln finden nichts, weil der Fund
+  als «Turnbeutel» unter «Taschen & Rucksäcke» erfasst ist.
+- Die KI schlägt den **Turnbeutel** vor – mit Begründung und Prozentwert, gekennzeichnet als «Vorschlag mit KI». Entscheiden tut der Mensch.
+- Zurück zur **Übersicht**: Die Kachel «KI-Unterstützung» zählt «Treffer nur dank KI» und «Formulare mit KI ausgefüllt».
+
+**8 · Abschluss (30 s).** Mandantenfähig (jede Fundstelle sieht nur ihre Daten), Datenschutz eingebaut
+(Merkmale bleiben intern, Kontaktdaten werden 90 Tage nach Abschluss gelöscht, an die KI gehen nie Kontaktdaten).
+KI überall dort, wo sie Arbeit spart – aber jede Funktion hat einen Weg ohne KI, und über das Eigentum entscheidet immer ein Mensch.
 
 ### Weitere Beispiele in den Demo-Daten
 
@@ -74,19 +83,24 @@ funktioniert ohne KI und auf jedem Handy.
 
 | Ebene | Anzahl | Befehl |
 | --- | --- | --- |
-| SQL-Checks (RLS, Token, Matching-Testfälle 6.6, Limits, Reset, E-Mail, KI-Limits) | 96 | `pnpm db:check` |
-| Unit (Vitest) | 18 | `pnpm test` |
-| Edge Functions (Deno) | 15 | `pnpm fn:test` |
-| E2E (Playwright, je 360 px und 1280 px, inkl. axe) | 76 | `pnpm test:e2e` |
+| SQL-Checks (RLS, Token, Matching-Testfälle 6.6, Limits, Reset, E-Mail, KI-Kontext, KI-Treffer, Cache) | 117 | `pnpm db:check` |
+| Unit (Vitest) | 20 | `pnpm test` |
+| Edge Functions (Deno) | 21 | `pnpm fn:test` |
+| E2E (Playwright, je 360 px und 1280 px, inkl. axe und KI mit Mock) | 82 | `pnpm test:e2e` |
 
 ## Bekannte Grenzen
 
 - **E-Mails:** Ohne Resend-Einrichtung werden keine echten E-Mails verschickt. Der Postausgang zeigt alles, was verschickt würde,
   inklusive der persönlichen Links – praktisch für die Demo, in einem echten Betrieb müsste das Team diese Links ausblenden.
 - **Fotos** liegen in einem öffentlichen Storage-Bucket mit zufälligen Dateinamen. Keine Fotos von Personen oder Ausweisen hochladen.
-- **KI (DeepSeek):** Server in China. Es geht nur der Freitext aus «In eigenen Worten beschreiben» hin; E-Mail-Adressen,
-  Telefon- und Kontonummern werden vorher entfernt. Max. 20 Aufrufe pro Stunde und Gerät, Tageslimit gesamt (`AI_DAILY_LIMIT`).
-- **Nicht umgesetzt (Should/Could):** automatische Benachrichtigung bei neuen Funden (S4), KI-Treffer `semantic_match` (S2),
-  KI-Synonyme `expand_query` (S3, die lokale Synonymtabelle ist umgesetzt), Foto-Vorschlag (C1), Hilfe-Assistent (C2).
+- **KI (DeepSeek, Server in China):** Es gehen nur Angaben zum Gegenstand hin (Titel, Kategorie, Farbe, Marke, öffentliche Beschreibung,
+  Ort, Datum) – nie Kontaktdaten, interne Merkmale oder Notizen; E-Mail-Adressen, Telefon- und Kontonummern werden vorher entfernt.
+  IDs werden durch Kurzzeichen ersetzt, die Antwort wird gegen die Kandidatenliste geprüft. Max. 20 Aufrufe pro Stunde und Gerät,
+  Tageslimit gesamt (`AI_DAILY_LIMIT`), Protokoll ohne Inhalte.
+- **Foto-Vorschlag:** Das Foto geht verkleinert (768 px) an DeepSeek (`deepseek-flash`). Keine Fotos von Personen oder Ausweisen.
+- **KI-Treffer** werden berechnet, wenn eine Meldung oder ein Fund gespeichert bzw. in der Verwaltung geöffnet wird – nicht laufend
+  für alle Daten. Suchende sehen sie ab 60 %, Fundstellen ab 40 %.
+- **Nicht umgesetzt (Should/Could):** automatische E-Mail bei neuen Funden (S4), «Freundlicher formulieren» (draft_reply),
+  Hilfe-Assistent (C2).
 - **«Demo zurücksetzen»** löscht alle Daten aller Fundstellen. Vor einem echten Einsatz entfernen (Migration `…_demo.sql`).
 - Die Fundnummern (`BSM-2026-0006`) sind erratbar; unter `/fund/…` sind aber nur öffentliche Funde abrufbar.

@@ -1,7 +1,7 @@
 import { t } from '@/i18n/de-CH'
 
 /** Reihenfolge, in der Begründungen angezeigt werden (stärkste zuerst). */
-const ORDER = ['marke_gleich', 'farbe_gleich', 'stichwort', 'farbe_aehnlich', 'ort', 'datum_nah']
+const ORDER = ['ki', 'marke_gleich', 'farbe_gleich', 'stichwort', 'farbe_aehnlich', 'ort', 'datum_nah']
 
 /** Wandelt Begründungs-Kürzel aus dem Matching in 1–3 Chips in Alltagssprache um (KONZEPT 6.5). */
 export const reasonLabels = (reasons: readonly string[], max = 3): string[] => {
@@ -10,7 +10,10 @@ export const reasonLabels = (reasons: readonly string[], max = 3): string[] => {
   const result: string[] = []
   for (const reason of sorted) {
     const [code, word] = reason.split(':')
-    if (code === 'stichwort' && word) {
+    if (code === 'ki') {
+      const text = reason.slice(3).trim()
+      if (text) result.push(text)
+    } else if (code === 'stichwort' && word) {
       if (result.some((label) => label.startsWith('Wort:'))) continue
       result.push(labels.stichwort(word))
     } else if (code && code in labels && code !== 'stichwort') {
@@ -20,3 +23,6 @@ export const reasonLabels = (reasons: readonly string[], max = 3): string[] => {
   }
   return result
 }
+
+/** Stammt der Treffer von der KI (semantic_match)? */
+export const isAiReason = (reasons: readonly string[]): boolean => reasons.some((reason) => reason.startsWith('ki:'))

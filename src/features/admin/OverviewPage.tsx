@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { useMutation } from '@tanstack/react-query'
-import { ChevronRight, ClipboardList, Hand, Mail, Package, PackagePlus, RotateCcw, Store } from 'lucide-react'
+import { ChevronRight, ClipboardList, Hand, Mail, Package, PackagePlus, RotateCcw, Sparkles, Store } from 'lucide-react'
 import { t } from '@/i18n/de-CH'
 import { useStaff } from '@/app/auth'
 import { resetDemo } from '@/services/staff'
@@ -11,7 +11,8 @@ import { Alert } from '@/components/ui/Feedback'
 import { Card, PageHeader, Section } from '@/components/ui/Layout'
 import { cn } from '@/components/ui/cn'
 import { useToast } from '@/components/ui/toastContext'
-import { useClaims, useMatchCounts, useStaffItems } from './queries'
+import { useAiFeature } from '@/features/ai/useAiStatus'
+import { useAiStats, useClaims, useMatchCounts, useStaffItems } from './queries'
 import { useInvalidate } from './useInvalidate'
 
 /** Übersicht mit Kennzahlen und grossem Button «Fund erfassen» (KONZEPT 4). */
@@ -66,6 +67,8 @@ export const OverviewPage = () => {
         ))}
       </ul>
 
+      <AiStatsCard />
+
       <Section title={t.admin.overview.more}>
         <div className="grid gap-2 sm:grid-cols-3">
           {[
@@ -104,5 +107,35 @@ export const OverviewPage = () => {
         </Card>
       )}
     </div>
+  )
+}
+
+/** Kennzahl «KI-Unterstützung»: macht sichtbar, was die KI im Hintergrund beiträgt. Ohne KI ausgeblendet. */
+const AiStatsCard = () => {
+  const matching = useAiFeature('semantic_match')
+  const filling = useAiFeature('extract_fields')
+  const enabled = matching || filling
+  const stats = useAiStats()
+  if (!enabled || !stats.data) return null
+  const entries = [
+    { value: stats.data.kiOnlyMatches, label: t.ai.statsMatches, hint: t.ai.statsMatchesHint },
+    { value: stats.data.assistedForms, label: t.ai.statsForms, hint: t.ai.statsFormsHint },
+  ]
+  return (
+    <Card className="p-4 ring-violet-200 sm:p-5" data-testid="ai-stats">
+      <h2 className="flex items-center gap-2 text-lg font-semibold text-violet-900">
+        <Sparkles className="size-5" aria-hidden /> {t.ai.statsTitle}
+        <span className="text-sm font-normal text-stone-600">{t.ai.statsLead}</span>
+      </h2>
+      <ul className="mt-3 grid gap-3 sm:grid-cols-2">
+        {entries.map(({ value, label, hint }) => (
+          <li key={label} className="rounded-2xl bg-violet-50 p-3 ring-1 ring-violet-100">
+            <span className="block text-3xl font-semibold text-violet-900">{value}</span>
+            <span className="block font-medium text-stone-900">{label}</span>
+            <span className="block text-sm text-stone-600">{hint}</span>
+          </li>
+        ))}
+      </ul>
+    </Card>
   )
 }

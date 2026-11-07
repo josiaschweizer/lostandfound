@@ -2,7 +2,13 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { Search, SearchX, X } from 'lucide-react'
 import { t } from '@/i18n/de-CH'
 import { addDays, formatShortDate, todayIso } from '@/domain/dates'
-import { searchCatalog, type CatalogFilters } from '@/domain/search'
+import { normalize, searchCatalog, SIMILAR_THRESHOLD, type CatalogFilters } from '@/domain/search'
+import { useQuery } from '@tanstack/react-query'
+import { queryKeys } from '@/lib/queryKeys'
+import { expandQuery } from '@/services/ai'
+import { AiChip } from '@/components/items/ReasonChips'
+import { AiStatusLine } from '@/features/ai/AiStatusLine'
+import { useAiFeature } from '@/features/ai/useAiStatus'
 import { CATEGORIES } from '@/domain/types'
 import { Swatch } from '@/components/items/ColorDot'
 import { ITEM_GRID, ItemCard, ItemCardSkeleton } from '@/components/items/ItemCard'
@@ -55,10 +61,26 @@ export const CatalogSearch = ({ officeId, officeSlug }: { officeId?: string; off
     timer.current = setTimeout(() => update({ query: value }), 300)
   }
 
-  const { results, similar, alsoSearched } = useMemo(
-    () => searchCatalog(catalog.data ?? [], filters, (item) => officeMap.get(item.organisationId)?.name ?? '', synonyms.data ?? []),
-    [catalog.data, filters, officeMap, synonyms.data],
+  const nameOf = useMemo(() => (item: { organisationId: string }) => officeMap.get(item.organisationId)?.name ?? '', [officeMap])
+  const base = useMemo(() => searchCatalog(catalog.data ?? [], filters, nameOf, synonyms.data ?? []), [catalog.data, filters, nameOf, synonyms.data])
+
+  // KI-Suchbegriffe (KONZEPT 7.3): nur wenn Suche + Synonyme weniger als 3 Treffer bringen; serverseitig zwischengespeichert
+  const aiExpandEnabled = useAiFeature('expand_query')
+  const aiQuery = normalize(filters.query.trim()).replace(/\s+/g, ' ')
+  const needsAi = aiExpandEnabled && catalog.isSuccess && aiQuery.length >= 3 && base.results.length + base.similar.length < SIMILAR_THRESHOLD
+  const expansion = useQuery({
+    queryKey: queryKeys.expansion(aiQuery),
+    queryFn: () => expandQuery(filters.query.trim()),
+    enabled: needsAi,
+    staleTime: Infinity,
+    retry: false,
+  })
+  const aiTerms = useMemo(() => (needsAi ? (expansion.data?.terms ?? []) : []), [needsAi, expansion.data])
+  const { results, similar, alsoSearched, viaAi } = useMemo(
+    () => (aiTerms.length > 0 ? searchCatalog(catalog.data ?? [], filters, nameOf, synonyms.data ?? [], aiTerms) : base),
+    [aiTerms, base, catalog.data, filters, nameOf, synonyms.data],
   )
+  const aiSearching = needsAi && expansion.isFetching
 
   const period = periodOf(filters)
   const activeChips: { key: string; label: React.ReactNode; text: string; remove: () => void }[] = [
@@ -259,7 +281,10 @@ export const CatalogSearch = ({ officeId, officeSlug }: { officeId?: string; off
                 <h2 id={`${ids}-similar`} className="text-lg font-semibold">
                   {t.search.similar}
                 </h2>
-                <p className="text-stone-700">{t.search.alsoSearched(alsoSearched.join(', '))}</p>
+                <p className="flex flex-wrap items-center gap-2 text-stone-700">
+                  {t.search.alsoSearched(alsoSearched.join(', '))}
+                  {viaAi && <AiChip />}
+                </p>
               </div>
               <ul className={ITEM_GRID}>
                 {similar.map((item) => (
@@ -271,7 +296,9 @@ export const CatalogSearch = ({ officeId, officeSlug }: { officeId?: string; off
             </section>
           )}
 
-          {results.length === 0 && similar.length === 0 && (
+          {aiSearching && <AiStatusLine running text={t.search.aiSearching} />}
+
+          {results.length === 0 && similar.length === 0 && !aiSearching && (
             <EmptyState
               icon={<SearchX className="size-6" />}
               title={t.search.nothing}

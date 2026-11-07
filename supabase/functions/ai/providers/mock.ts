@@ -130,11 +130,61 @@ export const mockExtract = (raw: string, today: string): Record<string, unknown>
   }
 }
 
+const words = (value: unknown): string[] =>
+  String(value ?? '')
+    .toLowerCase()
+    .split(/[^\p{L}0-9]+/u)
+    .filter((w) => w.length >= 4 && !/^(schwarz|grau|weiss|beige|braun|rot|rosa|pink|orange|gelb|grün|gruen|türkis|blau|violett|lila|silber|gold|bunt)/.test(w))
+    .map((w) => w.slice(0, 5))
+
+/** Mock für semantic_match: Art, Farbe und gemeinsame Wörter, ohne Kategorie-Pflicht. */
+export const mockSemantic = (block: string): Record<string, unknown> => {
+  const data = JSON.parse(block) as { referenz: Record<string, unknown>; kandidaten: Record<string, unknown>[] }
+  const ref = data.referenz
+  const refWords = new Set([...words(ref.titel), ...words(ref.beschreibung)])
+  const refColors = (ref.farben as string[] | undefined) ?? []
+  const treffer = data.kandidaten.flatMap((c) => {
+    const parts: string[] = []
+    let score = 0
+    if (c.kategorie === ref.kategorie) (score += 35), parts.push('gleiche Art Gegenstand')
+    if (((c.farben as string[] | undefined) ?? []).some((f) => refColors.includes(f))) (score += 25), parts.push('Farbe passt')
+    if ([...words(c.titel), ...words(c.beschreibung)].some((w) => refWords.has(w))) (score += 30), parts.push('ähnliche Beschreibung')
+    return score >= 40 ? [{ id: c.id, bewertung: score, begruendung: parts.join(', ').replace(/^./, (x) => x.toUpperCase()) }] : []
+  })
+  return { treffer }
+}
+
+const EXPANSIONS: [RegExp, string[], string][] = [
+  [/musik|kabel|hören|ohr/, ['Kopfhörer', 'Ohrhörer', 'Headset'], 'electronics'],
+  [/handy|telefon|natel/, ['Smartphone', 'Handy'], 'electronics'],
+  [/geld|karten|börse/, ['Portemonnaie', 'Geldbeutel'], 'wallets'],
+  [/regen|nass/, ['Regenschirm', 'Regenjacke'], 'other'],
+  [/schule|stifte|schreiben/, ['Federmäppchen', 'Etui'], 'other'],
+  [/warm|kalt|winter/, ['Jacke', 'Mütze', 'Schal'], 'clothing'],
+]
+
+/** Mock für expand_query: kleines Wörterbuch. */
+export const mockExpand = (query: string): Record<string, unknown> => {
+  const hit = EXPANSIONS.find(([re]) => re.test(query.toLowerCase()))
+  return { begriffe: hit?.[1] ?? [], kategorie_hinweis: hit?.[2] ?? null }
+}
+
+/** Mock für photo_suggest: Bilder kann er nicht sehen – feste, als unsicher markierte Antwort (nur für Tests). */
+export const MOCK_PHOTO = {
+  titel: 'Rucksack', kategorie: 'bags', farben: ['black'], marke: null, beschreibung: 'Rucksack mit Fronttasche',
+  ort: null, datum_von: null, datum_bis: null, unsicher: ['titel', 'farben'],
+}
+
 export const createMockProvider = (): Provider => ({
   name: 'mock',
   complete(req: CompleteRequest): Promise<CompleteResult> {
     const { text, today } = parseUserBlock(req.user)
-    const body = req.action === 'extract_fields' ? mockExtract(text, today) : {}
+    const body =
+      req.action === 'extract_fields' ? mockExtract(text, today)
+      : req.action === 'semantic_match' ? mockSemantic(text)
+      : req.action === 'expand_query' ? mockExpand(text)
+      : req.action === 'photo_suggest' ? MOCK_PHOTO
+      : {}
     return Promise.resolve({ text: JSON.stringify(body), usage: { input: 0, output: 0 } })
   },
 })

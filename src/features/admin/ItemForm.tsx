@@ -7,7 +7,10 @@ import { t } from '@/i18n/de-CH'
 import { todayIso } from '@/domain/dates'
 import { CATEGORIES, COLORS, type StaffItem } from '@/domain/types'
 import { useStaff } from '@/app/auth'
-import type { ExtractedFields } from '@/services/ai'
+import { photoSuggest, type ExtractedFields } from '@/services/ai'
+import { useMutation } from '@tanstack/react-query'
+import { AiStatusLine } from '@/features/ai/AiStatusLine'
+import { useAiFeature } from '@/features/ai/useAiStatus'
 import { toUserMessage } from '@/services/errors'
 import { deletePhoto, photoUrl, uploadPhoto } from '@/services/photos'
 import type { ItemInput } from '@/services/staff'
@@ -77,6 +80,9 @@ export const ItemForm = ({ item, onSubmit, onCancel }: { item?: StaffItem; onSub
   const [aiFilled, setAiFilled] = useState<{ filled: Set<FieldName>; uncertain: Set<FieldName> }>({ filled: new Set(), uncertain: new Set() })
   const [moreOpen, setMoreOpen] = useState(Boolean(item))
   const fileInput = useRef<HTMLInputElement>(null)
+  const [idCardNote, setIdCardNote] = useState(false)
+  const photoAiEnabled = useAiFeature('photo_suggest')
+  const [photoResult, setPhotoResult] = useState<'done' | 'nothing' | null>(null)
 
   const preview = useMemo(() => (photoFile ? URL.createObjectURL(photoFile) : null), [photoFile])
   useEffect(() => () => {
@@ -105,10 +111,38 @@ export const ItemForm = ({ item, onSubmit, onCancel }: { item?: StaffItem; onSub
       set('publicDescription', fields.beschreibung)
       setMoreOpen(true)
     }
+    // Ausweise und Karten nie automatisch veröffentlichen (KONZEPT 7.5)
+    if ((fields.kategorie === 'id_cards' || form.getValues('category') === 'id_cards') && current.isPublic && !form.formState.dirtyFields.isPublic) {
+      form.setValue('isPublic', false, { shouldDirty: true })
+      setMoreOpen(true)
+      setIdCardNote(true)
+    }
     const map: Record<string, FieldName> = { titel: 'title', kategorie: 'category', farben: 'colors', ort: 'foundLocation', marke: 'brand', beschreibung: 'publicDescription', datum_von: 'foundOn', datum_bis: 'foundOn' }
-    setAiFilled({ filled, uncertain: new Set(fields.unsicher.map((key) => map[key]).filter((key): key is FieldName => Boolean(key))) })
+    const uncertain = fields.unsicher.map((key) => map[key]).filter((key): key is FieldName => Boolean(key))
+    // Text- und Foto-Vorschläge ergänzen sich: bereits markierte Felder bleiben markiert
+    setAiFilled((prev) => ({ filled: new Set([...prev.filled, ...filled]), uncertain: new Set([...prev.uncertain, ...uncertain.filter((key) => filled.has(key))]) }))
     return [...filled]
   }
+
+  // Foto → Vorschlag (KONZEPT 7.5, C1): läuft automatisch, sobald ein Foto gewählt ist
+  const photoAi = useMutation({
+    mutationFn: photoSuggest,
+    onMutate: () => setPhotoResult(null),
+    onSuccess: (fields) => setPhotoResult(fillFromAi(fields).length > 0 ? 'done' : 'nothing'),
+  })
+  const choosePhoto = (file: File | null) => {
+    setPhotoFile(file)
+    if (file && photoAiEnabled) photoAi.mutate(file)
+  }
+  const photoStatus = photoAi.isPending
+    ? t.ai.photoWorking
+    : photoAi.isError
+      ? t.ai.photoFailed
+      : photoResult === 'done'
+        ? t.ai.photoDone
+        : photoResult === 'nothing'
+          ? t.ai.photoNothing
+          : null
   const aiState = (name: FieldName) => (aiFilled.filled.has(name) ? (aiFilled.uncertain.has(name) ? 'uncertain' : 'filled') : undefined)
 
   const submit = form.handleSubmit(async (values) => {
@@ -147,7 +181,7 @@ export const ItemForm = ({ item, onSubmit, onCancel }: { item?: StaffItem; onSub
               capture="environment"
               className="sr-only"
               id="item-photo"
-              onChange={(event) => setPhotoFile(event.target.files?.[0] ?? null)}
+              onChange={(event) => choosePhoto(event.target.files?.[0] ?? null)}
             />
             <Button variant="secondary" icon={<Camera className="size-5" aria-hidden />} onClick={() => fileInput.current?.click()}>
               {t.admin.itemForm.photoButton}
@@ -166,7 +200,12 @@ export const ItemForm = ({ item, onSubmit, onCancel }: { item?: StaffItem; onSub
               </Button>
             )}
           </div>
-          <p className="mt-1 text-sm text-stone-600">{t.admin.itemForm.photoHint}</p>
+          <p className="mt-1 text-sm text-stone-600">
+            {photoAiEnabled && `${t.ai.photoHint} `}
+            {t.admin.itemForm.photoHint}
+          </p>
+          <AiStatusLine className="mt-1" running={photoAi.isPending} text={photoStatus} />
+          {idCardNote && <AiStatusLine running={false} text={t.ai.idCardPrivate} />}
         </div>
 
         <div data-field="title">

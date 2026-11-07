@@ -77,4 +77,16 @@ describe('Suche', () => {
   it('Suchwörter ohne Füllwörter', () => {
     expect(searchTerms('Ich habe meine schwarze Jacke verloren')).toEqual(['schwarze', 'jacke'])
   })
+
+  it('nutzt KI-Begriffe nur, wenn Suche und Synonyme zu wenig finden', () => {
+    const query = { ...EMPTY_FILTERS, query: 'Ding für Musik' }
+    expect(searchCatalog(ITEMS, query, office, SYNONYMS).similar).toEqual([])
+    const withAi = searchCatalog(ITEMS, query, office, SYNONYMS, ['Kopfhörer', 'Ohrhörer'])
+    expect(withAi.similar.map((i) => i.id)).toEqual(['3'])
+    expect(withAi.viaAi).toBe(true)
+    expect(withAi.alsoSearched).toEqual(['Kopfhörer', 'Ohrhörer'])
+    // genug normale Treffer: KI-Begriffe werden ignoriert
+    const jacket = searchCatalog(ITEMS, { ...EMPTY_FILTERS, query: 'jacke' }, office, SYNONYMS, ['Brotdose'])
+    expect(jacket.viaAi).toBe(false)
+  })
 })

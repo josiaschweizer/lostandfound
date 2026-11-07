@@ -7,6 +7,8 @@ export const queryKeys = {
   myClaim: (token: string) => ['my-claim', token] as const,
   draftMatches: (key: string) => ['draft-matches', key] as const,
   aiStatus: ['ai-status'] as const,
+  expansion: (query: string) => ['ai-expansion', query] as const,
+  aiStats: ['staff', 'ai-stats'] as const,
   membership: (userId: string) => ['membership', userId] as const,
   staff: ['staff'] as const,
   staffItems: ['staff', 'items'] as const,

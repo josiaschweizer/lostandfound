@@ -16,6 +16,8 @@ import { Card, DefinitionList, PageHeader } from '@/components/ui/Layout'
 import { CopyLink } from './CopyLink'
 import { EmailList } from './EmailList'
 import { useMyLoss } from './queries'
+import { AiStatusLine } from '@/features/ai/AiStatusLine'
+import { useSemanticMatch } from '@/features/ai/useSemanticMatch'
 
 /** «Meine Verlustmeldung» über den persönlichen Link (KONZEPT 5.8), mit Treffern direkt nach dem Absenden. */
 export const MyLossPage = () => {
@@ -27,6 +29,10 @@ export const MyLossPage = () => {
     mutationFn: () => closeMyLoss(token),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.myLoss(token) }),
   })
+  // KI-Treffer im Hintergrund (KONZEPT 7.4): Regel-Treffer sind sofort da, KI-Treffer kommen dazu.
+  const ai = useSemanticMatch(loss.data?.status === 'open' ? { token } : null, () =>
+    queryClient.invalidateQueries({ queryKey: queryKeys.myLoss(token) }),
+  )
 
   if (loss.isPending) return <Spinner />
   if (loss.isError) return <ErrorState error={loss.error} onRetry={() => loss.refetch()} />
@@ -51,6 +57,10 @@ export const MyLossPage = () => {
               {t.myLoss.matchesTitle}
             </h2>
             <p className="text-stone-700">{t.myLoss.matchesHint}</p>
+            <AiStatusLine
+              running={ai.running}
+              text={ai.running ? t.ai.matchRunning : r.matches.some((m) => m.source === 'ki') ? t.ai.matchFound(r.matches.filter((m) => m.source === 'ki').length) : null}
+            />
           </div>
           {r.matches.length === 0 ? (
             <EmptyState icon={<SearchX className="size-6" />} title={t.myLoss.noMatches} action={<ButtonLink to="/suche" variant="secondary">{t.nav.search}</ButtonLink>}>

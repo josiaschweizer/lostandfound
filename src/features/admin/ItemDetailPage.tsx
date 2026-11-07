@@ -15,6 +15,9 @@ import { Button, ButtonLink } from '@/components/ui/Button'
 import { Badge, EmptyState, ErrorState, Spinner } from '@/components/ui/Feedback'
 import { Card, DefinitionList, PageHeader, Section } from '@/components/ui/Layout'
 import { useToast } from '@/components/ui/toastContext'
+import { AiChip } from '@/components/items/ReasonChips'
+import { AiStatusLine } from '@/features/ai/AiStatusLine'
+import { useSemanticMatch } from '@/features/ai/useSemanticMatch'
 import { ItemForm } from './ItemForm'
 import { useClaims, useItemHistory, useItemMatches, useMembers, useStaffItem } from './queries'
 import { useInvalidate } from './useInvalidate'
@@ -66,6 +69,10 @@ export const ItemDetailPage = () => {
     },
     onError: (error) => toast({ message: toUserMessage(error), tone: 'error' }),
   })
+
+  const open = item.data?.status === 'available' || item.data?.status === 'reserved'
+  const ai = useSemanticMatch(open ? { itemId: id } : null, invalidate)
+  const kiCount = (matches.data ?? []).filter((m) => m.source === 'ki').length
 
   if (item.isPending) return <Spinner />
   if (item.isError) return <ErrorState error={item.error} onRetry={() => item.refetch()} />
@@ -156,6 +163,7 @@ export const ItemDetailPage = () => {
           </Section>
 
           <Section title={t.admin.itemDetail.matches}>
+            <AiStatusLine className="mb-2" running={ai.running} text={ai.running ? t.ai.matchRunningStaff : kiCount > 0 ? t.ai.matchFoundStaff(kiCount) : null} />
             {matches.isPending ? (
               <Spinner />
             ) : (matches.data ?? []).length === 0 ? (
@@ -166,7 +174,8 @@ export const ItemDetailPage = () => {
                   <li key={m.reportId} className="flex flex-wrap items-center gap-3 rounded-2xl bg-stone-50 p-3 ring-1 ring-stone-200">
                     <Link to={`/verwaltung/meldungen/${m.reportId}`} className="min-w-0 flex-1 hover:text-brand-700">
                       <span className="flex flex-wrap items-center gap-2 font-semibold">
-                        {m.title} <Badge tone="brand">{t.admin.reports.score(m.score)}</Badge>
+                        {m.title}{' '}
+                        {m.source === 'ki' ? <AiChip label={`${t.ai.chip} · ${t.ai.score(m.score)}`} /> : <Badge tone="brand">{t.admin.reports.score(m.score)}</Badge>}
                         {m.isUnknownOffice && <Badge tone="violet">{t.admin.reports.unknownOffice}</Badge>}
                       </span>
                       <span className="block text-sm text-stone-700">{reasonLabels(m.reasons, 4).join(' · ')}</span>

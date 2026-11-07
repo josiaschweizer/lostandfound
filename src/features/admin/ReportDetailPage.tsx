@@ -13,6 +13,9 @@ import { Button, ButtonLink } from '@/components/ui/Button'
 import { Badge, EmptyState, ErrorState, Spinner } from '@/components/ui/Feedback'
 import { DefinitionList, PageHeader, Section } from '@/components/ui/Layout'
 import { useToast } from '@/components/ui/toastContext'
+import { AiChip } from '@/components/items/ReasonChips'
+import { AiStatusLine } from '@/features/ai/AiStatusLine'
+import { useSemanticMatch } from '@/features/ai/useSemanticMatch'
 import { useLossMatches, useLossReport } from './queries'
 import { useInvalidate } from './useInvalidate'
 
@@ -39,6 +42,9 @@ export const ReportDetailPage = () => {
     },
     onError: (error) => toast({ message: toUserMessage(error), tone: 'error' }),
   })
+
+  const ai = useSemanticMatch(report.data?.status === 'open' ? { lossId: id } : null, invalidate)
+  const kiCount = (matches.data ?? []).filter((m) => m.source === 'ki').length
 
   if (report.isPending) return <Spinner />
   if (report.isError) return <ErrorState error={report.error} onRetry={() => report.refetch()} />
@@ -105,6 +111,7 @@ export const ReportDetailPage = () => {
         </div>
 
         <Section title={t.admin.reports.matches}>
+          <AiStatusLine className="mb-2" running={ai.running} text={ai.running ? t.ai.matchRunningStaff : kiCount > 0 ? t.ai.matchFoundStaff(kiCount) : null} />
           {matches.isPending ? (
             <Spinner />
           ) : matches.isError ? (
@@ -119,7 +126,12 @@ export const ReportDetailPage = () => {
                     <ItemImage photoPath={m.photoPath} category={m.category} title={m.title} className="size-14 shrink-0 rounded-xl" />
                     <span className="min-w-0">
                       <span className="flex flex-wrap items-center gap-2 font-semibold">
-                        {m.title} {m.score !== undefined && <Badge tone="brand">{t.admin.reports.score(m.score)}</Badge>}
+                        {m.title}{' '}
+                        {m.source === 'ki' ? (
+                          <AiChip label={m.score !== undefined ? `${t.ai.chip} · ${t.ai.score(m.score)}` : t.ai.chip} />
+                        ) : (
+                          m.score !== undefined && <Badge tone="brand">{t.admin.reports.score(m.score)}</Badge>
+                        )}
                       </span>
                       <span className="block font-mono text-sm text-stone-600">{m.itemNumber}</span>
                       <span className="block text-sm text-stone-700">{reasonLabels(m.reasons, 4).join(' · ')}</span>

@@ -108,6 +108,8 @@ export interface CatalogResult<T extends PublicItem> {
   similar: T[]
   /** Synonyme, nach denen zusätzlich gesucht wurde («auch gesucht nach: …») */
   alsoSearched: string[]
+  /** true, wenn KI-Suchbegriffe (expand_query) zusätzliche Gegenstände gefunden haben */
+  viaAi: boolean
 }
 
 export const SIMILAR_THRESHOLD = 3
@@ -117,6 +119,8 @@ export const searchCatalog = <T extends PublicItem>(
   filters: CatalogFilters,
   officeName: (item: T) => string,
   synonyms: SynonymGroups = [],
+  /** Zusätzliche Begriffe der KI (KONZEPT 7.3), nur genutzt, wenn Suche + Synonyme weniger als 3 Treffer liefern */
+  aiTerms: readonly string[] = [],
 ): CatalogResult<T> => {
   const terms = searchTerms(filters.query)
   const candidates = items.filter((item) => passesFilters(item, filters))
@@ -124,14 +128,36 @@ export const searchCatalog = <T extends PublicItem>(
   const hay = (item: T) => haystacks.get(item.id)!
 
   const results = candidates.filter((item) => terms.every((term) => termMatches(term, hay(item)))).sort(byNewest)
-  if (terms.length === 0 || results.length >= SIMILAR_THRESHOLD) return { results, similar: [], alsoSearched: [] }
+  if (terms.length === 0 || results.length >= SIMILAR_THRESHOLD) return { results, similar: [], alsoSearched: [], viaAi: false }
 
   const { alternatives, shown } = expandTerms(terms, synonyms)
-  if (shown.length === 0) return { results, similar: [], alsoSearched: [] }
   const found = new Set(results.map((item) => item.id))
-  const similar = candidates
-    .filter((item) => !found.has(item.id))
-    .filter((item) => alternatives.every((options) => options.some((option) => termMatches(option, hay(item)))))
-    .sort(byNewest)
-  return { results, similar, alsoSearched: similar.length > 0 ? shown.slice(0, 4) : [] }
+  let similar =
+    shown.length === 0
+      ? []
+      : candidates
+          .filter((item) => !found.has(item.id))
+          .filter((item) => alternatives.every((options) => options.some((option) => termMatches(option, hay(item)))))
+          .sort(byNewest)
+  let alsoSearched = similar.length > 0 ? shown.slice(0, 4) : []
+  let viaAi = false
+
+  if (aiTerms.length > 0 && results.length + similar.length < SIMILAR_THRESHOLD) {
+    const known = new Set([...found, ...similar.map((item) => item.id)])
+    const aiHits = candidates
+      .filter((item) => !known.has(item.id))
+      .filter((item) =>
+        aiTerms.some((term) => {
+          const parts = searchTerms(term)
+          return parts.length > 0 && parts.every((part) => termMatches(part, hay(item)))
+        }),
+      )
+      .sort(byNewest)
+    if (aiHits.length > 0) {
+      similar = [...similar, ...aiHits]
+      alsoSearched = [...alsoSearched, ...aiTerms.filter((term) => !alsoSearched.includes(term))].slice(0, 6)
+      viaAi = true
+    }
+  }
+  return { results, similar, alsoSearched, viaAi }
 }
