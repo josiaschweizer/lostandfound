@@ -1,4 +1,4 @@
-# lostandfound v1 – Prototyp einer Lost-&-Found-Plattform
+# lostandfound rm/v1 – Prototyp einer Lost-&-Found-Plattform
 
 Schulprojekt M241. Organisationen (Schulen, Fundbüros, Unternehmen) registrieren sich, verwalten ihre eigene Fundstelle und erfassen Fundgegenstände. Suchende finden Gegenstände ohne Konto, fragen eine Rückgabe an oder melden einen Verlust.
 
@@ -12,14 +12,14 @@ Schulprojekt M241. Organisationen (Schulen, Fundbüros, Unternehmen) registriere
 - Node.js 20 oder neuer
 - pnpm 9 oder neuer (z. B. `brew install pnpm`)
 - Supabase CLI (`pnpm install` installiert sie lokal als Dev-Abhängigkeit)
-- Zugriff auf das Supabase-Projekt `hfwykjvplojbetwzpyvu`
+- Zugriff auf das Supabase-Projekt `vkgfyfqxyhnokdwyqotl`
 
 ### Einmalig: Datenbank einrichten
 
 ```bash
 pnpm install
 pnpm exec supabase login                # Browser-Login bei Supabase
-pnpm db:link                   # verknüpft mit hfwykjvplojbetwzpyvu (fragt nach dem DB-Passwort)
+pnpm db:link                   # verknüpft mit vkgfyfqxyhnokdwyqotl (fragt nach dem DB-Passwort)
 pnpm db:push                   # spielt alle Migrationen + Beispieldaten ein
 ```
 
@@ -121,7 +121,7 @@ Ohne diese Schritte funktioniert alles wie bisher, Nachrichten erscheinen dann n
    ```
 4. Im Supabase-Dashboard unter *SQL Editor* einmal ausführen (gleiches Secret wie oben):
    ```sql
-   select vault.create_secret('https://hfwykjvplojbetwzpyvu.supabase.co/functions/v1/send-email', 'email_function_url');
+   select vault.create_secret('https://vkgfyfqxyhnokdwyqotl.supabase.co/functions/v1/send-email', 'email_function_url');
    select vault.create_secret('<secret aus Schritt 2>', 'email_webhook_secret');
    ```
 5. Testen: öffentlich eine Rückgabe anfragen und als Kontakt die eigene E-Mail-Adresse angeben. Im Postausgang der Organisation steht danach «E-Mail versendet». Bei «Versand fehlgeschlagen» steht der Grund direkt unter der Nachricht. Logs gibt es unter *Edge Functions → send-email → Logs*.

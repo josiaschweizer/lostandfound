@@ -10,7 +10,7 @@
     "lint": "oxlint",
     "test": "vitest run",
     "preview": "vite preview",
-    "db:link": "supabase link --project-ref hfwykjvplojbetwzpyvu",
+    "db:link": "supabase link --project-ref vkgfyfqxyhnokdwyqotl",
     "db:push": "supabase db push --include-seed",
     "db:types": "supabase gen types typescript --linked --schema public > src/lib/database.types.ts",
     "fn:deploy": "supabase functions deploy send-email",
